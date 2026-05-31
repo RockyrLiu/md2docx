@@ -1,0 +1,13 @@
+# cache files
+__pycache__/
+
+# virtual environment
+/.venv
+
+# images
+*.png
+*.jpg
+*.svg
+
+# docx files
+*.docx

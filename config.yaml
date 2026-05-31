@@ -1,0 +1,153 @@
+# =============================================================================
+# MD-to-DOCX Converter — 默认配置文件
+# =============================================================================
+# 可通过 -c/--config 指定自定义配置文件路径。
+# 所有样式项均提供默认值，缺失的键会自动回退到内置默认值。
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# 封面配置
+# ---------------------------------------------------------------------------
+cover:
+  enabled: true
+  title: "报告标题"
+  subtitle: ""
+  author: "姓名"
+  class_info: "班级学号"
+  teacher: "任课老师"
+  department: ""
+  date: ""          # 留空则使用当天日期
+
+# ---------------------------------------------------------------------------
+# 目录配置
+# ---------------------------------------------------------------------------
+toc:
+  enabled: true
+  level: 3          # 目录包含的标题级别数 (1-6)
+
+# ---------------------------------------------------------------------------
+# 样式配置
+# ---------------------------------------------------------------------------
+styles:
+  # ===== 正文样式 =====
+  body:
+    font_name: "宋体"
+    font_name_ascii: "Times New Roman"
+    font_size: 12                    # 小四号 = 12pt
+    line_spacing: 1.5
+    bold: false
+    italic: false
+    alignment: "justify"             # left / center / right / justify
+    first_line_indent: 2             # 首行缩进字符数，0 表示不缩进
+    space_before: 0                  # 段前间距 (pt)
+    space_after: 0                   # 段后间距 (pt)
+    color: null                      # RGB 十六进制，如 "000000"，null = 自动
+
+  # ===== 各级标题样式 =====
+  headings:
+    h1:
+      font_name: "黑体"
+      font_name_ascii: "Times New Roman"
+      font_size: 22                  # 二号
+      bold: true
+      italic: false
+      alignment: "center"
+      space_before: 12
+      space_after: 12
+      color: null
+    h2:
+      font_name: "黑体"
+      font_name_ascii: "Times New Roman"
+      font_size: 16                  # 三号
+      bold: true
+      italic: false
+      alignment: "left"
+      space_before: 6
+      space_after: 6
+      color: null
+    h3:
+      font_name: "黑体"
+      font_name_ascii: "Times New Roman"
+      font_size: 14                  # 四号
+      bold: true
+      italic: false
+      alignment: "left"
+      space_before: 6
+      space_after: 6
+      color: null
+    h4:
+      font_name: "黑体"
+      font_name_ascii: "Times New Roman"
+      font_size: 12                  # 小四
+      bold: true
+      italic: false
+      alignment: "left"
+      space_before: 3
+      space_after: 3
+      color: null
+    h5:
+      font_name: "黑体"
+      font_name_ascii: "Times New Roman"
+      font_size: 12
+      bold: true
+      italic: false
+      alignment: "left"
+      space_before: 3
+      space_after: 3
+      color: null
+    h6:
+      font_name: "黑体"
+      font_name_ascii: "Times New Roman"
+      font_size: 12
+      bold: true
+      italic: false
+      alignment: "left"
+      space_before: 3
+      space_after: 3
+      color: null
+
+  # ===== 表格样式 =====
+  table:
+    font_name: "宋体"
+    font_name_ascii: "Times New Roman"
+    font_size: 10                    # 五号
+    bold: false
+    header_bold: true
+    alignment: "center"
+    line_spacing: 1.0
+
+  # ===== 列表样式 =====
+  list:
+    font_name: "宋体"
+    font_name_ascii: "Times New Roman"
+    font_size: 12
+    line_spacing: 1.5
+    indent: 0.5                      # 缩进（英寸）
+
+  # ===== 代码块样式 =====
+  code:
+    font_name: "Consolas"
+    font_name_ascii: "Consolas"
+    font_size: 10
+    line_spacing: 1.0
+    background_color: "F2F2F2"       # 背景灰色
+
+  # ===== 引用块样式 =====
+  blockquote:
+    font_name: "楷体"
+    font_name_ascii: "Times New Roman"
+    font_size: 12
+    italic: true
+    line_spacing: 1.5
+    left_indent: 0.5                 # 左缩进（英寸）
+    border_left_color: "999999"
+
+# ---------------------------------------------------------------------------
+# 页面设置
+# ---------------------------------------------------------------------------
+page:
+  size: "A4"                         # A4 / Letter
+  margin_top: 2.54                   # cm，上边距
+  margin_bottom: 2.54                # cm，下边距
+  margin_left: 3.18                  # cm，左边距
+  margin_right: 3.18                 # cm，右边距
