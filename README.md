@@ -206,7 +206,7 @@ page:
 | 库 | 用途 |
 |----|------|
 | [python-docx](https://python-docx.readthedocs.io/) | DOCX 文档生成与样式管理 |
-| [mistune](https://mistune.lepture.com/) v3 | Markdown 解析为 AST |
+| [mistune](https://mistune.lepture.com/) | Markdown 解析为 AST |
 | [latex2mathml](https://pypi.org/project/late2mathml/) | LaTeX → MathML 转换 |
 | [lxml](https://lxml.de/) | OMML XML 构建与注入 |
 | [Pillow](https://python-pillow.org/) | 图片尺寸读取 |

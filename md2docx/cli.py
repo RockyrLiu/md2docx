@@ -53,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
         "-o", "--output",
         type=str,
         default=None,
-        help="输出 .docx 文件路径 (默认: 输入同名.docx)",
+        help="输出 .docx 文件路径 (默认: 与输入文件同目录同名.docx)",
     )
 
     args = parser.parse_args(argv)

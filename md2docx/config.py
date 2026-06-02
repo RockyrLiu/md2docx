@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, is_dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -26,8 +26,8 @@ class TextStyle:
     bold: bool = False
     italic: bool = False
     alignment: str = "left"  # left | center | right | justify
-    space_before: int = 0  # pt
-    space_after: int = 0  # pt
+    space_before: int = 0  # pt, 段前间距
+    space_after: int = 0  # pt, 段后间距
     first_line_indent: int = 0  # 首行缩进字符数
     color: str | None = None  # RGB hex, None = auto
 
@@ -192,7 +192,10 @@ def _deep_merge(base: dict, override: dict) -> dict:
 
 def _dict_to_dataclass(cls: type, data: dict[str, Any]) -> Any:
     """Convert a dict to a dataclass instance, dropping unknown keys."""
-    field_names = {f.name for f in cls.__dataclass_fields__.values()}  # type: ignore[attr-defined]
+    if not is_dataclass(cls):
+        raise TypeError(f"{cls} is not a dataclass")
+    # Extract the set of field names defined in the data class (e.g., {"font_size", "bold"})
+    field_names = {f.name for f in cls.__dataclass_fields__.values()}
     kwargs = {k: v for k, v in data.items() if k in field_names}
     return cls(**kwargs)
 

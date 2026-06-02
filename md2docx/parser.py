@@ -1,4 +1,4 @@
-"""Markdown parser — converts .md files to a flat block-level AST using mistune v3.
+"""Markdown parser — converts .md files to a flat block-level AST using mistune.
 
 Handles: headings, paragraphs, tables, images, ordered/unordered lists
 (both tight and loose, nested), blockquotes, fenced code blocks,
@@ -17,9 +17,7 @@ import mistune
 # Inline / block math regexes
 # ---------------------------------------------------------------------------
 _INLINE_MATH_RE = re.compile(r"(?<!\\)\$((?:[^\$]|\\\$)+?)(?<!\\)\$")
-_DISPLAY_MATH_RE = re.compile(r"(?<!\\)\$\$((?:[^\$]|\\\$)+?)(?<!\\)\$\$", re.DOTALL)
-_PH_MATH_INLINE = re.compile(r"\x00MATHINLINE\d+\x00")
-_PH_MATH_BLOCK = re.compile(r"\x00MATHBLOCK\d+\x00")
+_DISPLAY_MATH_RE = re.compile(r"(?<!\\)\$\$((?:[^\$]|\\\$)+?)(?<!\\)\$\$", re.DOTALL)  # re.DOTALL allows newlines in display math
 _PH_ANY = re.compile(r"\x00MATH(?:INLINE|BLOCK)\d+\x00")
 
 
@@ -49,7 +47,10 @@ def _escape_math(text: str) -> tuple[str, dict[str, str]]:
 
 
 def _restore_text(text: str, placeholders: dict[str, str]) -> str:
-    """Restore math placeholders in a text string, returning the raw math."""
+    """
+    The inverse operation of _escape_math. 
+    Restore math placeholders in a text string, returning the raw math.
+    """
     for key, value in placeholders.items():
         text = text.replace(key, value)
     return text
@@ -63,16 +64,16 @@ def _restore_text(text: str, placeholders: dict[str, str]) -> str:
 def _split_by_placeholders(text: str, placeholders: dict[str, str]) -> list[dict[str, Any]]:
     """Split text on math placeholder markers, producing text + inline_math runs."""
     runs: list[dict[str, Any]] = []
-    parts = _PH_ANY.split(text)
-    markers = _PH_ANY.findall(text)
+    parts = _PH_ANY.split(text)  # split on placeholders, keeping text parts
+    markers = _PH_ANY.findall(text)  # find all placeholders in order
 
     # parts and markers interleave: part0, marker0, part1, marker1, ...
     for i, part in enumerate(parts):
-        if part.strip():
+        if part.strip():  # part is non-empty text
             runs.append({"type": "text", "text": part})
         if i < len(markers):
             marker = markers[i]
-            math_content = placeholders.get(marker, marker)
+            math_content = placeholders.get(marker, marker)  # Mapping failed, display the placeholder itself
             runs.append({"type": "inline_math", "text": math_content})
     return runs
 
@@ -81,9 +82,9 @@ def _extract_inline_children(
     children: list[dict[str, Any]],
     placeholders: dict[str, str],
 ) -> list[dict[str, Any]]:
-    """Convert mistune v3 inline AST children into our run-dict format.
+    """Convert mistune inline AST children into our run-dict format.
 
-    mistune v3 uses ``"raw"`` for text nodes (not ``"text"``).
+    Attention: mistune uses ``"raw"`` for text nodes (not ``"text"``).
     """
     result: list[dict[str, Any]] = []
 
@@ -102,11 +103,11 @@ def _extract_inline_children(
             else:
                 result.append({"type": "text", "text": raw})
 
-        elif ctype == "strong":
+        elif ctype == "strong":  # bold
             inner = _extract_inline_children(child.get("children", []), placeholders)
             result.append({"type": "bold", "children": inner})
 
-        elif ctype == "emphasis":
+        elif ctype == "emphasis":  # italic
             inner = _extract_inline_children(child.get("children", []), placeholders)
             result.append({"type": "italic", "children": inner})
 
@@ -123,7 +124,7 @@ def _extract_inline_children(
             })
 
         elif ctype == "image":
-            # mistune v3: attrs.url for src, children[text] for alt
+            # mistune: attrs.url for src, children[text] for alt
             src = child.get("attrs", {}).get("url", "")
             alt = _extract_plain_text(child.get("children", []))
             result.append({"type": "image", "src": src, "alt": alt})
@@ -137,24 +138,6 @@ def _extract_inline_children(
             result.append({"type": "text", "text": raw})
 
     return result
-
-
-def _split_math_runs(text: str, placeholders: dict[str, str]) -> list[dict[str, Any]]:
-    """Split text containing $...$ spans into text + inline_math runs."""
-    runs: list[dict[str, Any]] = []
-    pos = 0
-    for m in _INLINE_MATH_RE.finditer(text):
-        if m.start() > pos:
-            prefix = text[pos : m.start()]
-            if prefix.strip():
-                runs.append({"type": "text", "text": prefix})
-        runs.append({"type": "inline_math", "text": m.group(1)})
-        pos = m.end()
-    if pos < len(text):
-        suffix = text[pos:]
-        if suffix.strip():
-            runs.append({"type": "text", "text": suffix})
-    return runs
 
 
 # ---------------------------------------------------------------------------
@@ -182,40 +165,16 @@ def _extract_plain_text(children: list[dict[str, Any]]) -> str:
     return "".join(parts)
 
 
-def _extract_plain_text_from_block_text(children: list[dict[str, Any]]) -> str:
-    """Extract text from block_text children (used in tight lists)."""
-    parts: list[str] = []
-    for child in children:
-        if not isinstance(child, dict):
-            continue
-        ctype = child.get("type", "")
-        if ctype == "block_text":
-            parts.append(_extract_plain_text(child.get("children", [])))
-        elif ctype == "paragraph":
-            parts.append(_extract_plain_text(child.get("children", [])))
-        elif ctype == "list":
-            # nested list — skip for text extraction
-            pass
-        elif ctype == "text":
-            parts.append(child.get("raw", ""))
-    return "".join(parts)
-
-
 # ---------------------------------------------------------------------------
 # Block conversion
 # ---------------------------------------------------------------------------
-
-
-def _convert_table_cell(cell: dict[str, Any]) -> list[dict[str, Any]]:
-    """Extract inline children from a table_cell."""
-    return cell.get("children", [])
 
 
 def _block_to_dict(
     block: dict[str, Any],
     placeholders: dict[str, str],
 ) -> dict[str, Any] | None:
-    """Convert a single mistune v3 AST block to our intermediate format."""
+    """Convert a single mistune AST block to our intermediate format."""
     btype = block.get("type", "")
 
     # --- Thematic break ---
@@ -253,7 +212,7 @@ def _block_to_dict(
         inner_blocks = _flatten_blocks(block.get("children", []), placeholders)
         return {"type": "blockquote", "children": inner_blocks}
 
-    # --- Table (mistune v3: table → table_head/table_body → table_row → table_cell) ---
+    # --- Table (mistune: table → table_head/table_body → table_row → table_cell) ---
     if btype == "table":
         header_cells: list[str] = []
         body_rows: list[list[str]] = []
@@ -333,7 +292,7 @@ def _flatten_blocks(
     blocks: list[dict[str, Any]],
     placeholders: dict[str, str],
 ) -> list[dict[str, Any]]:
-    """Convert a list of mistune v3 AST blocks into our flat format."""
+    """Convert a list of mistune AST blocks into our flat format."""
     result: list[dict[str, Any]] = []
     for block in blocks:
         if not isinstance(block, dict):
