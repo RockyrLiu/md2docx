@@ -29,7 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     """CLI entry point.  Returns 0 on success, 1 on error."""
     try:
         sys.stdout = io.TextIOWrapper(
-            sys.stdout.buffer, encoding="utf-8", errors="replace"
+            sys.stdout.buffer, encoding="utf-8", errors="replace",
+            line_buffering=True,
         )
     except Exception:
         pass

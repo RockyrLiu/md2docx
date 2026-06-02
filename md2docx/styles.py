@@ -186,34 +186,23 @@ def apply_format_to_para(para, style) -> None:
 # =============================================================================
 
 
-def add_cover_title(doc: Document, text: str) -> None:
-    """Add a large, centered title on the cover page (黑体 一号)."""
-    para = doc.add_paragraph()
-    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    para.paragraph_format.space_before = Pt(60)
-    para.paragraph_format.space_after = Pt(30)
-    run = para.add_run(text)
-    set_run_font(run, cn_name="黑体", en_name="Times New Roman",
-                 size=SIZE_YIHAO, bold=True)
-    return para
-
-
-def add_cover_info_line(
-    doc: Document,
-    label: str,
-    value: str = "",
-    size: Pt = SIZE_SANHAO,
-) -> None:
-    """Add a centered info line on the cover: ``label：value``."""
-    para = doc.add_paragraph()
-    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    para.paragraph_format.line_spacing = 1.5
-    para.paragraph_format.space_before = Pt(6)
-    para.paragraph_format.space_after = Pt(6)
-    text = f"{label}：{value}" if value else label
-    run = para.add_run(text)
-    set_run_font(run, cn_name="宋体", size=size)
-    return para
+def add_cover_line(doc, text, value='__________', font_size=Pt(16), font_name="宋体"):
+    """Add a line on the cover page."""
+    p = doc.add_paragraph()
+    p.alignment =  _ALIGN["center"]
+    p.paragraph_format.space_before = Pt(12)
+    p.paragraph_format.space_after = Pt(6)
+    run_label = p.add_run(text)
+    run_label.font.name = font_name
+    run_label._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
+    run_label.font.size = font_size
+    run_label.bold = True
+    run_value = p.add_run('  ' + value)
+    run_value.font.name = font_name
+    run_value._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
+    run_value.font.size = font_size
+    run_value.underline = True
+    return p
 
 
 # =============================================================================

@@ -118,11 +118,10 @@ class CoverConfig:
 
     enabled: bool = True
     title: str = "报告标题"
-    subtitle: str = ""
     author: str = ""
     class_info: str = ""
+    student_id: str = ""
     teacher: str = ""
-    department: str = ""
     date: str = ""
 
 

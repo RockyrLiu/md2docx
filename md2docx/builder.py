@@ -26,8 +26,7 @@ from md2docx.config import (
 )
 from md2docx.math_handler import add_inline_math, add_math_paragraph
 from md2docx.styles import (
-    add_cover_info_line,
-    add_cover_title,
+    add_cover_line,
     apply_font_to_run,
     apply_format_to_para,
     setup_heading_styles,
@@ -447,38 +446,33 @@ def _setup_page(doc: Document, config: AppConfig) -> None:
 
 
 def _build_cover(doc: Document, config: AppConfig) -> None:
-    """Build the cover page."""
     cover = config.cover
-
     # Vertical spacing from top
     for _ in range(4):
         doc.add_paragraph()
 
-    # Title
-    add_cover_title(doc, cover.title)
-
-    if cover.subtitle:
-        add_cover_info_line(doc, "", cover.subtitle, size=SIZE_SANHAO)
+    # Report Title
+    title_p = doc.add_paragraph()
+    title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_p.paragraph_format.space_before = Pt(20)
+    run = title_p.add_run(cover.title)
+    run.font.name = '黑体'
+    run._element.rPr.rFonts.set(qn('w:eastAsia'), '黑体')
+    run.font.size = Pt(28)
+    run.bold = True
 
     # Spacing
     for _ in range(4):
         doc.add_paragraph()
 
-    # Info lines
-    if cover.author:
-        add_cover_info_line(doc, "姓    名", cover.author, size=SIZE_SANHAO)
-    if cover.class_info:
-        add_cover_info_line(doc, "班    级", cover.class_info, size=SIZE_SANHAO)
-    if cover.teacher:
-        add_cover_info_line(doc, "任课教师", cover.teacher, size=SIZE_SANHAO)
-    if cover.department:
-        add_cover_info_line(doc, "院    系", cover.department, size=SIZE_SANHAO)
-    if cover.date:
-        add_cover_info_line(doc, "日    期", cover.date, size=SIZE_SANHAO)
+    # Student info
+    add_cover_line(doc, '姓    名：', f'{cover.author}')
+    add_cover_line(doc, '班    级：', f'{cover.class_info}')
+    add_cover_line(doc, '学    号：', f'{cover.student_id}')
+    add_cover_line(doc, '任课教师：', f'{cover.teacher}')
+    add_cover_line(doc, '实验日期：', f'{cover.date}')
 
-    # Page break
     doc.add_page_break()
-
 
 # =============================================================================
 # TOC

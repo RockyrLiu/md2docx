@@ -11,9 +11,9 @@
 cover:
   enabled: true
   title: "报告标题"
-  subtitle: ""
   author: "姓名"
-  class_info: "班级学号"
+  class_info: "班级号"
+  student_id: "学号"
   teacher: "任课老师"
   department: ""
   date: ""          # 留空则使用当天日期
