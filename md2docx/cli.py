@@ -20,6 +20,11 @@ from md2docx.parser import parse_markdown
 from md2docx.builder import build_docx
 
 
+RED = "\033[31m"
+YELLOW = "\033[33m"
+GREEN = "\033[32m"
+RESET = "\033[0m"
+
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point.  Returns 0 on success, 1 on error."""
     try:
@@ -48,17 +53,18 @@ def main(argv: list[str] | None = None) -> int:
         "-o", "--output",
         type=str,
         default=None,
-        help="输出 .docx 文件路径 (默认: 与输入同名，扩展名为 .docx)",
+        help="输出 .docx 文件路径 (默认: 输入同名.docx)",
     )
 
     args = parser.parse_args(argv)
 
     input_path = Path(args.input)
     if not input_path.exists():
-        print(f"错误: 输入文件不存在: {input_path}", file=sys.stderr)
+        print(f"{RED}[Error]{RESET} 输入文件不存在: {input_path}]", file=sys.stderr)
         return 1
     if not input_path.suffix.lower() in (".md", ".markdown", ".mdown", ".mkd"):
-        print(f"警告: 输入文件扩展名不是常见的 Markdown 扩展名: {input_path}", file=sys.stderr)
+        print(f"{RED}[Error]{RESET} 输入文件扩展名不是常见的 Markdown 扩展名: {input_path}", file=sys.stderr)
+        return 1
 
     if args.output:
         output_path = Path(args.output)
@@ -67,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
 
     config_path = args.config
     if not Path(config_path).exists():
-        print(f"警告: 配置文件不存在: {config_path}，使用默认配置", file=sys.stderr)
+        print(f"{YELLOW}[Warning]{RESET} 配置文件不存在，使用默认配置", file=sys.stderr)
         config_path = None
 
     try:
@@ -76,20 +82,20 @@ def main(argv: list[str] | None = None) -> int:
         else:
             config = AppConfig()
     except Exception as exc:
-        print(f"错误: 加载配置文件失败: {exc}", file=sys.stderr)
+        print(f"{RED}[Error]{RESET} 加载配置文件失败: {exc}", file=sys.stderr)
         return 1
 
     try:
         md_text = input_path.read_text(encoding="utf-8")
     except Exception as exc:
-        print(f"错误: 读取 Markdown 文件失败: {exc}", file=sys.stderr)
+        print(f"{RED}[Error]{RESET} 读取 Markdown 文件失败: {exc}", file=sys.stderr)
         return 1
 
     print(f"解析 Markdown: {input_path}")
     try:
         ast = parse_markdown(md_text)
     except Exception as exc:
-        print(f"错误: 解析 Markdown 失败: {exc}", file=sys.stderr)
+        print(f"{RED}[Error]{RESET} 解析 Markdown 失败: {exc}", file=sys.stderr)
         return 1
     print(f"  发现 {len(ast)} 个块级元素")
 
@@ -97,17 +103,17 @@ def main(argv: list[str] | None = None) -> int:
     try:
         doc = build_docx(ast, config, input_path, output_path)
     except Exception as exc:
-        print(f"错误: 生成 DOCX 失败: {exc}", file=sys.stderr)
+        print(f"{RED}[Error]{RESET} 生成 DOCX 失败: {exc}", file=sys.stderr)
         return 1
 
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         doc.save(str(output_path))
     except Exception as exc:
-        print(f"错误: 保存 DOCX 失败: {exc}", file=sys.stderr)
+        print(f"{RED}[Error]{RESET} 保存 DOCX 失败: {exc}", file=sys.stderr)
         return 1
 
-    print(f"[OK] 转换完成: {output_path}")
+    print(f"{GREEN}[OK]{RESET} 转换完成: {output_path}")
     return 0
 
 
