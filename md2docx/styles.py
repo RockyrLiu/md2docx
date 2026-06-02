@@ -58,23 +58,22 @@ def set_run_font(
 
         set_run_font(run, cn_name="黑体", size=SIZE_SANHAO, bold=True)
     """
-    # Set ASCII/HAnsi via python-docx API (creates rPr + rFonts if needed)
+    # Set ASCII/HAnsi via python-docx API
     run.font.name = en_name
     run.font.size = size
     run.bold = bold
     run.italic = italic
 
-    # Clear theme references and set East-Asian font explicitly
+    # set East-Asian font explicitly
     rpr = run._element.rPr
     rfonts = rpr.find(qn("w:rFonts"))
-    if rfonts is None:
-        rfonts = OxmlElement("w:rFonts")
-        rpr.insert(0, rfonts)
     rfonts.set(qn("w:eastAsia"), cn_name)
 
-    # Color: always explicit (no theme)
+    # Color
     if color is not None:
         run.font.color.rgb = color
+    else:
+        run.font.color.rgb = RGBColor(0, 0, 0)  # Default to black if color is None
 
 
 # =============================================================================
@@ -240,6 +239,52 @@ def insert_toc_field(doc: Document, levels: int = 3) -> None:
     run4._element.append(fld_end)
 
 
+def setup_toc_style(doc: Document, toc_style) -> None:
+    """Create/override Word built-in TOC 1~9 styles with configured font, size, color.
+
+    When the user updates the TOC field in Word, the generated entries inherit
+    these style definitions.  A single config object is applied to all TOC levels
+    by default (Chinese academic convention — all TOC lines same font/size).
+
+    The ``w:customStyle`` attribute is explicitly removed after creation so that
+    Word recognises these as the real built-in TOC styles rather than ignoring
+    them during TOC field updates.
+    """
+    from docx.enum.style import WD_STYLE_TYPE
+
+    cn = getattr(toc_style, "font_name", "宋体")
+    en = getattr(toc_style, "font_name_ascii", "Times New Roman")
+
+    for i in range(1, 10):  # TOC 1 … TOC 9
+        style_name = f"TOC {i}"
+        try:
+            style = doc.styles[style_name]
+        except KeyError:
+            # Style doesn't exist in the default template — create it
+            style = doc.styles.add_style(style_name, WD_STYLE_TYPE.PARAGRAPH)
+
+        # Remove customStyle flag so Word treats this as a built-in TOC style
+        style_elem = style.element
+        style_elem.attrib.pop(qn("w:customStyle"), None)
+
+        _set_style_fonts(style, cn, en)
+        style.font.size = Pt(getattr(toc_style, "font_size", 12))
+        style.font.bold = getattr(toc_style, "bold", True)
+        style.font.italic = getattr(toc_style, "italic", False)
+
+        color_value = getattr(toc_style, "color", None)
+        if color_value:
+            style.font.color.rgb = RGBColor.from_string(color_value)
+
+        # Line spacing — compact single spacing
+        style.paragraph_format.line_spacing = 1.0
+
+        # Per-level left indent (matches standard Word TOC behaviour:
+        # TOC 1 flush left, TOC 2 indented ~0.75 cm, TOC 3 ~1.5 cm, etc.)
+        if i > 1:
+            style.paragraph_format.left_indent = Cm((i - 1) * 0.75)
+
+
 # =============================================================================
 # Style setup (Normal + Heading 1-6)
 # =============================================================================
@@ -251,11 +296,19 @@ def _set_style_fonts(style, cn_font: str, en_font: str) -> None:
 
     rpr = style.element.rPr
     rFonts = rpr.find(qn('w:rFonts'))
-    
+
     rFonts.set(qn('w:ascii'), en_font)
     rFonts.set(qn('w:hAnsi'), en_font)
     rFonts.set(qn('w:eastAsia'), cn_font)
     rFonts.set(qn('w:cs'), en_font)
+
+    # MUST clear theme font references
+    for attr in (qn('w:asciiTheme'), qn('w:hAnsiTheme'),
+                 qn('w:eastAsiaTheme'), qn('w:cstheme')):
+        try:
+            del rFonts.attrib[attr]
+        except KeyError:
+            pass
 
 
 def setup_normal_style(doc: Document, body_style) -> None:

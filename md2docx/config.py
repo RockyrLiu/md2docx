@@ -127,10 +127,21 @@ class CoverConfig:
 
 @dataclass
 class TocConfig:
-    """Table of contents configuration."""
+    """Table of contents configuration.
+
+    The style fields (``font_name`` … ``color``) are applied to Word's built-in
+    TOC 1~9 paragraph styles and take effect after the user right-clicks the TOC
+    field in Word and chooses "Update Field".
+    """
 
     enabled: bool = True
-    level: int = 3  # 1-6
+    level: int = 3  # 1-6, how many heading levels to include
+    font_name: str = "宋体"
+    font_name_ascii: str = "Times New Roman"
+    font_size: int = 12
+    bold: bool = False
+    italic: bool = False
+    color: str | None = "000000"
 
 
 @dataclass

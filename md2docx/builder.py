@@ -31,6 +31,7 @@ from md2docx.styles import (
     apply_format_to_para,
     setup_heading_styles,
     setup_normal_style,
+    setup_toc_style,
     format_table_content,
     insert_toc_field,
     make_three_line_table,
@@ -178,17 +179,19 @@ def _para_has_content(para) -> bool:
 
 
 def _render_heading(doc: Document, block: dict[str, Any], heading_styles: dict[str, HeadingStyle]) -> None:
-    """Render a heading block."""
+    """Render a heading block.
+
+    Font face, size, bold, and color are handled by the heading *style*
+    (setup_heading_styles).  We deliberately avoid applying run-level character
+    formatting here — Word's TOC field copies run-level rPr from the heading
+    into the TOC entry, which would otherwise override the TOC style font with
+    the heading font (e.g. 黑体).  Leaving runs clean lets the TOC style's font
+    (e.g. 宋体) take effect after "Update Field".
+    """
     level = block.get("level", 1)
     text = block.get("text", "")
-    level_key = f"h{max(1, min(6, level))}"
-    hs = heading_styles.get(level_key, heading_styles["h1"])
     style_name = f"Heading {max(1, min(6, level))}"
-
-    para = doc.add_paragraph(text, style=style_name)
-    for run in para.runs:
-        set_run_font(run, cn_name=hs.font_name, en_name=hs.font_name_ascii,
-                     size=Pt(hs.font_size), bold=hs.bold)
+    doc.add_paragraph(text, style=style_name)
 
 
 def _render_table(doc: Document, block: dict[str, Any], table_style: TableStyle) -> None:
@@ -481,7 +484,6 @@ def _build_cover(doc: Document, config: AppConfig) -> None:
 
 def _build_toc(doc: Document, config: AppConfig) -> None:
     """Insert a Word Table of Contents field."""
-    # "目录" heading
     para = doc.add_paragraph()
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     para.paragraph_format.space_before = Pt(12)
@@ -575,6 +577,9 @@ def build_docx(
 
     # --- Heading styles ---
     setup_heading_styles(doc, config.styles.headings)
+
+    # --- TOC styles ---
+    setup_toc_style(doc, config.toc)
 
     # --- Cover page ---
     if config.cover.enabled:
