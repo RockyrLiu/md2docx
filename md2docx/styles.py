@@ -383,26 +383,59 @@ def setup_heading_styles(doc: Document, heading_config: dict) -> None:
 def make_three_line_table(table, header_rows: int = 1) -> None:
     """Format a python-docx Table as an academic three-line table.
 
-    - Top border: 1.5 pt
-    - Below header: 0.75 pt
-    - Bottom border: 1.5 pt
+    Border precedence in OOXML (highest to lowest):
+      1. Cell-level exceptions (w:tcBorders) — overrides everything
+      2. Table-level exceptions (w:tblBorders) — overrides style
+      3. Table style conditional formatting
+      4. Table style
+      5. Document defaults
+
+    Setting cell-level borders to 0 pt white would BLOCK table-level borders,
+    so we work at the table level only (except for the header-underline, which
+    is genuinely a cell-level detail).
+
+    - Top border: 1.5 pt (12 eighths of a point)
+    - Below header: 0.75 pt (6 eighths)
+    - Bottom border: 1.5 pt (12 eighths)
     - No vertical or interior horizontal borders
     """
-    _clear_all_cell_borders(table)
-    _set_table_border(table, "top", 12)       # 1.5 pt
-    _set_table_border(table, "bottom", 12)    # 1.5 pt
-    _set_table_border(table, "left", 0, "FFFFFF")
-    _set_table_border(table, "right", 0, "FFFFFF")
-    _set_table_border(table, "insideH", 0, "FFFFFF")
-    _set_table_border(table, "insideV", 0, "FFFFFF")
 
+    # ---- 1. Remove default table style so it doesn't interfere ----
+    tbl_pr = table._tbl.tblPr
+    if tbl_pr is None:
+        tbl_pr = OxmlElement("w:tblPr")
+        table._tbl.insert(0, tbl_pr)
+    # Clear any inherited style (e.g. "Table Grid") that may inject borders
+    for existing_style in tbl_pr.findall(qn("w:tblStyle")):
+        tbl_pr.remove(existing_style)
+
+    # ---- 2. Set table-level borders ----
+    _set_table_border(table, "top", 12)          # 1.5 pt
+    _set_table_border(table, "bottom", 12)       # 1.5 pt
+    _set_table_border(table, "left", 0, "auto")         # no left
+    _set_table_border(table, "right", 0, "auto")        # no right
+    _set_table_border(table, "insideH", 0, "auto")      # no interior horizontal
+    _set_table_border(table, "insideV", 0, "auto")      # no interior vertical
+
+    # ---- 3. Cell-level: underline below header row(s) ----
     for i in range(header_rows):
         for cell in table.rows[i].cells:
-            _set_cell_border(cell, "bottom", 6)  # 0.75 pt
+            _set_cell_border(cell, "bottom", 6)  # 0.75 pt under header
+
+
+def _is_math_run(run) -> bool:
+    """Return True if *run* is an OMML math run (contains m:oMath child)."""
+    for child in run._element:
+        if child.tag.endswith("}oMath") or child.tag.endswith("}oMathPara"):
+            return True
+    return False
 
 
 def format_table_content(table, table_style, header_rows: int = 1) -> None:
-    """Apply font, size, alignment to all cells in a table."""
+    """Apply font, size, alignment to all cells in a table.
+
+    Math runs (OMML) are skipped — they must keep their Cambria Math font.
+    """
     for row_idx, row in enumerate(table.rows):
         for cell in row.cells:
             for para in cell.paragraphs:
@@ -412,6 +445,8 @@ def format_table_content(table, table_style, header_rows: int = 1) -> None:
                 )
                 para.paragraph_format.line_spacing = getattr(table_style, "line_spacing", 1.0)
                 for run in para.runs:
+                    if _is_math_run(run):
+                        continue
                     apply_font_to_run(run, table_style)
                     if row_idx < header_rows and getattr(table_style, "header_bold", True):
                         run.bold = True
@@ -422,22 +457,23 @@ def format_table_content(table, table_style, header_rows: int = 1) -> None:
 # =============================================================================
 
 
-def _clear_all_cell_borders(table) -> None:
-    for row in table.rows:
-        for cell in row.cells:
-            for pos in ("top", "bottom", "left", "right"):
-                _set_cell_border(cell, pos, 0, "FFFFFF")
-
-
 def _set_cell_border(cell, position: str, sz: int, color: str = "000000") -> None:
+    """Set a cell-level border (highest OOXML precedence — use sparingly).
+
+    Parameters
+    ----------
+    sz : int
+        Border width in eighths of a point.  Use 0 for no border.
+    """
     tc_pr = cell._tc.get_or_add_tcPr()
     borders = tc_pr.find(qn("w:tcBorders"))
     if borders is None:
         borders = OxmlElement("w:tcBorders")
         tc_pr.append(borders)
 
+    val = "none" if sz == 0 else "single"
     elem = OxmlElement(f"w:{position}")
-    elem.set(qn("w:val"), "single")
+    elem.set(qn("w:val"), val)
     elem.set(qn("w:sz"), str(sz))
     elem.set(qn("w:space"), "0")
     elem.set(qn("w:color"), color)
@@ -449,6 +485,16 @@ def _set_cell_border(cell, position: str, sz: int, color: str = "000000") -> Non
 
 
 def _set_table_border(table, position: str, sz: int, color: str = "000000") -> None:
+    """Set a table-level border.
+
+    Parameters
+    ----------
+    sz : int
+        Border width in eighths of a point (1 pt = 8).  Use 0 for no border.
+    color : str
+        Hex colour.  Use ``"auto"`` to let Word decide (typically black for
+        visible borders, invisible for none/nil borders).
+    """
     tbl_pr = table._tbl.tblPr
     if tbl_pr is None:
         tbl_pr = OxmlElement("w:tblPr")
@@ -457,10 +503,16 @@ def _set_table_border(table, position: str, sz: int, color: str = "000000") -> N
     borders = tbl_pr.find(qn("w:tblBorders"))
     if borders is None:
         borders = OxmlElement("w:tblBorders")
-        tbl_pr.insert(0, borders)
+        # tblBorders should come before tblLook in tblPr
+        tbl_look = tbl_pr.find(qn("w:tblLook"))
+        if tbl_look is not None:
+            tbl_pr.insert(list(tbl_pr).index(tbl_look), borders)
+        else:
+            tbl_pr.append(borders)
 
+    val = "none" if sz == 0 else "single"
     elem = OxmlElement(f"w:{position}")
-    elem.set(qn("w:val"), "single")
+    elem.set(qn("w:val"), val)
     elem.set(qn("w:sz"), str(sz))
     elem.set(qn("w:space"), "0")
     elem.set(qn("w:color"), color)

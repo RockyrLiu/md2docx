@@ -214,30 +214,36 @@ def _block_to_dict(
 
     # --- Table (mistune: table → table_head/table_body → table_row → table_cell) ---
     if btype == "table":
-        header_cells: list[str] = []
-        body_rows: list[list[str]] = []
+        header_runs: list[list[dict[str, Any]]] = []
+        body_rows: list[list[list[dict[str, Any]]]] = []
 
         for section in block.get("children", []):
             stype = section.get("type", "")
             if stype == "table_head":
                 # table_head children are table_cell directly (no table_row)
                 for cell in section.get("children", []):
-                    text = _extract_plain_text(cell.get("children", []))
-                    text = _restore_text(text, placeholders)
-                    header_cells.append(text)
+                    runs = _extract_inline_children(cell.get("children", []), placeholders)
+                    # If all runs are plain text, flatten to a single string for
+                    # backward compatibility with simpler downstream code.
+                    if runs and all(r.get("type") == "text" for r in runs):
+                        header_runs.append("".join(r.get("text", "") for r in runs))
+                    else:
+                        header_runs.append(runs)
             elif stype == "table_body":
                 # table_body children are table_row → table_cell
                 for row in section.get("children", []):
-                    row_texts: list[str] = []
+                    row_runs: list[list[dict[str, Any]] | str] = []
                     for cell in row.get("children", []):
-                        text = _extract_plain_text(cell.get("children", []))
-                        text = _restore_text(text, placeholders)
-                        row_texts.append(text)
-                    body_rows.append(row_texts)
+                        runs = _extract_inline_children(cell.get("children", []), placeholders)
+                        if runs and all(r.get("type") == "text" for r in runs):
+                            row_runs.append("".join(r.get("text", "") for r in runs))
+                        else:
+                            row_runs.append(runs)
+                    body_rows.append(row_runs)
 
         return {
             "type": "table",
-            "header": header_cells,
+            "header": header_runs,
             "rows": body_rows,
         }
 

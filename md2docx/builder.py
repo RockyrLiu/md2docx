@@ -38,6 +38,7 @@ from md2docx.styles import (
     set_para_left_border,
     set_para_shading,
     set_run_font,
+    _is_math_run,
     SIZE_SANHAO,
 )
 
@@ -166,8 +167,12 @@ def _render_heading(doc: Document, block: dict[str, Any]) -> None:
     doc.add_paragraph(text, style=style_name)
 
 
-def _render_table(doc: Document, block: dict[str, Any], table_style: TableStyle) -> None:
-    """Render a markdown table as an academic three-line table."""
+def _render_table(doc: Document, block: dict[str, Any], table_style: TableStyle, md_path: Path = Path(".")) -> None:
+    """Render a markdown table as an academic three-line table.
+
+    Each cell may be a plain string (simple text) or a list of inline-run
+    dicts (supports inline math, bold, italic, etc.).
+    """
     header = block.get("header", [])
     rows = block.get("rows", [])
 
@@ -179,37 +184,69 @@ def _render_table(doc: Document, block: dict[str, Any], table_style: TableStyle)
     if col_count == 0:
         return
 
-    # Normalize
-    header = header + [""] * (col_count - len(header))
-    norm_rows = [r + [""] * (col_count - len(r)) for r in rows]
+    # Normalize header / rows to column count
+    _norm: list = [""] * (col_count - len(header))
+    header = list(header) + _norm
+    norm_rows = [list(r) + [""] * (col_count - len(r)) for r in rows]
 
     table = doc.add_table(rows=1 + len(norm_rows), cols=col_count)
     table.autofit = True
 
+    # Build a StyleConfig so _render_inline_run uses table fonts for math fallback
+    _tbl_body = TextStyle(
+        font_name=table_style.font_name,
+        font_name_ascii=getattr(table_style, "font_name_ascii", table_style.font_name),
+        font_size=table_style.font_size,
+        line_spacing=table_style.line_spacing,
+    )
+    _tbl_styles = StyleConfig(body=_tbl_body)
+
     # Header row
-    _fill_table_row(table.rows[0], header, table_style, is_header=True)
+    _fill_table_row(table.rows[0], header, table_style, _tbl_styles, md_path, is_header=True)
 
     # Data rows
     for i, row_data in enumerate(norm_rows):
-        _fill_table_row(table.rows[i + 1], row_data, table_style, is_header=False)
+        _fill_table_row(table.rows[i + 1], row_data, table_style, _tbl_styles, md_path, is_header=False)
 
     # Apply three-line formatting
     make_three_line_table(table)
     format_table_content(table, table_style)
 
 
-def _fill_table_row(row, cell_texts: list[str], table_style: TableStyle, *, is_header: bool) -> None:
-    """Fill a table row with text."""
-    for i, text in enumerate(cell_texts):
+def _fill_table_row(row, cell_data_list: list, table_style: TableStyle,
+                    tbl_styles: StyleConfig, md_path: Path, *, is_header: bool) -> None:
+    """Fill a table row, rendering inline runs (text, math, bold, etc.)."""
+    for i, cell_data in enumerate(cell_data_list):
         cell = row.cells[i]
+        # Clear default empty paragraph
         cell.text = ""
         para = cell.paragraphs[0]
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         para.paragraph_format.line_spacing = table_style.line_spacing
-        run = para.add_run(text.strip())
-        apply_font_to_run(run, table_style)
-        if is_header and table_style.header_bold:
-            run.bold = True
+
+        if isinstance(cell_data, str):
+            # Plain text (backward-compatible fast path)
+            run = para.add_run(cell_data.strip())
+            apply_font_to_run(run, table_style)
+            if is_header and table_style.header_bold:
+                run.bold = True
+        elif isinstance(cell_data, list):
+            # Inline runs — supports inline_math, bold, italic, etc.
+            for run_data in cell_data:
+                _render_inline_run(para, run_data, tbl_styles, md_path)
+            # Apply table font to non-math runs (math runs must keep Cambria Math)
+            for run in para.runs:
+                if _is_math_run(run):
+                    continue
+                apply_font_to_run(run, table_style)
+                if is_header and table_style.header_bold:
+                    run.bold = True
+        else:
+            # Fallback
+            run = para.add_run(str(cell_data).strip())
+            apply_font_to_run(run, table_style)
+            if is_header and table_style.header_bold:
+                run.bold = True
 
 
 def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
@@ -486,7 +523,7 @@ def _render_block(doc: Document, block: dict[str, Any], styles: StyleConfig, md_
         _render_paragraph(doc, block, styles, md_path)
 
     elif btype == "table":
-        _render_table(doc, block, styles.table)
+        _render_table(doc, block, styles.table, md_path)
 
     elif btype == "image":
         _render_image(doc, block, md_path)

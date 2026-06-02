@@ -6,6 +6,8 @@ Usage::
     md2docx input.md                  # Uses config.yaml, outputs input.docx
     md2docx input.md -c my_conf.yaml  # Custom config
     md2docx input.md -o output.docx   # Custom output name
+    md2docx --init-config             # Write default config.yaml and exit
+    md2docx --init-config my.yaml     # Write config to a custom path
 """
 
 from __future__ import annotations
@@ -25,15 +27,33 @@ YELLOW = "\033[33m"
 GREEN = "\033[32m"
 RESET = "\033[0m"
 
+# Path to the default config template shipped inside the package
+_PACKAGE_DIR = Path(__file__).resolve().parent
+_DEFAULT_CONFIG_TEMPLATE = _PACKAGE_DIR / "default_config.yaml"
+
+
+def _generate_config(target: Path) -> int:
+    """Copy the shipped default_config.yaml to *target* as a starter template.
+
+    Returns 0 on success, 1 if the file already exists (refuses to overwrite).
+    """
+    if target.exists():
+        print(
+            f"{YELLOW}[Warning]{RESET} 目标文件已存在: {target}\n"
+            f"  如需重新生成，请先删除或重命名现有文件。",
+            file=sys.stderr,
+        )
+        return 1
+
+    content = _DEFAULT_CONFIG_TEMPLATE.read_text(encoding="utf-8")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+    print(f"{GREEN}[OK]{RESET} 配置文件模板已生成: {target}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point.  Returns 0 on success, 1 on error."""
-    try:
-        sys.stdout = io.TextIOWrapper(
-            sys.stdout.buffer, encoding="utf-8", errors="replace",
-            line_buffering=True,
-        )
-    except Exception:
-        pass
 
     parser = argparse.ArgumentParser(
         prog="md2docx",
@@ -41,7 +61,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "input",
+        nargs="?",
         type=str,
+        default=None,
         help="输入的 Markdown 文件路径",
     )
     parser.add_argument(
@@ -56,12 +78,41 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="输出 .docx 文件路径 (默认: 与输入文件同目录同名.docx)",
     )
+    parser.add_argument(
+        "-ic", "--init-config",
+        nargs="?",
+        const="config.yaml",
+        default=None,
+        type=str,
+        dest="init_config",
+        help="生成默认配置文件模板并退出 (可选指定输出路径，默认: config.yaml)",
+    )
 
     args = parser.parse_args(argv)
 
+    # --init-config mode: write template and exit (no input file needed)
+    if args.init_config is not None:
+        return _generate_config(Path(args.init_config))
+
+    # Wrap stdout for UTF-8 output (must happen after --init-config check,
+    # because wrapping twice in the same process breaks the underlying buffer).
+    try:
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace",
+            line_buffering=True,
+        )
+    except Exception:
+        pass
+
+    # Normal conversion mode: input file is required
+    if args.input is None:
+        parser.print_help()
+        print(f"\n{YELLOW}[Hint]{RESET} 使用 --init-config 生成默认配置文件模板", file=sys.stderr)
+        return 1
+
     input_path = Path(args.input)
     if not input_path.exists():
-        print(f"{RED}[Error]{RESET} 输入文件不存在: {input_path}]", file=sys.stderr)
+        print(f"{RED}[Error]{RESET} 输入文件不存在: {input_path}", file=sys.stderr)
         return 1
     if not input_path.suffix.lower() in (".md", ".markdown", ".mdown", ".mkd"):
         print(f"{RED}[Error]{RESET} 输入文件扩展名不是常见的 Markdown 扩展名: {input_path}", file=sys.stderr)
