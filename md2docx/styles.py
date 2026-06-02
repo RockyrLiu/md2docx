@@ -70,12 +70,10 @@ def set_run_font(
     if rfonts is None:
         rfonts = OxmlElement("w:rFonts")
         rpr.insert(0, rfonts)
-    _clear_theme_fonts(rfonts)
     rfonts.set(qn("w:eastAsia"), cn_name)
 
     # Color: always explicit (no theme)
     if color is not None:
-        _clear_theme_color(rpr)
         run.font.color.rgb = color
 
 
@@ -258,84 +256,44 @@ def insert_toc_field(doc: Document, levels: int = 3) -> None:
 # =============================================================================
 
 
-def _clear_theme_fonts(rfonts) -> None:
-    """Remove theme font references so explicit fonts take effect."""
-    for attr in (qn("w:asciiTheme"), qn("w:eastAsiaTheme"), qn("w:hAnsiTheme"), qn("w:cstheme")):
-        try:
-            del rfonts.attrib[attr]
-        except KeyError:
-            pass
+def _set_style_fonts(style, cn_font: str, en_font: str) -> None:
+    """Set both ASCII/HAnsi and East-Asian fonts for a style, clear theme references."""
+    style.font.name = cn_font
+
+    rpr = style.element.rPr
+    rFonts = rpr.find(qn('w:rFonts'))
+    
+    rFonts.set(qn('w:ascii'), en_font)
+    rFonts.set(qn('w:hAnsi'), en_font)
+    rFonts.set(qn('w:eastAsia'), cn_font)
+    rFonts.set(qn('w:cs'), en_font)
 
 
-def _clear_theme_color(rpr) -> None:
-    """Remove theme color reference from rPr so explicit color takes effect."""
-    color_el = rpr.find(qn("w:color"))
-    if color_el is not None:
-        try:
-            del color_el.attrib[qn("w:themeColor")]
-        except KeyError:
-            pass
-        try:
-            del color_el.attrib[qn("w:themeShade")]
-        except KeyError:
-            pass
-
-
-def _set_style_fonts(word_style, cn_name: str, en_name: str) -> None:
-    """Fully override style-level fonts — clear themes, set explicit CJK + ASCII."""
-    rpr = word_style.element.get_or_add_rPr()
-    rfonts = rpr.find(qn("w:rFonts"))
-    if rfonts is None:
-        rfonts = OxmlElement("w:rFonts")
-        rpr.insert(0, rfonts)
-
-    # Remove inherited theme font references (they take precedence over explicit names)
-    _clear_theme_fonts(rfonts)
-
-    # Set all font slots explicitly
-    rfonts.set(qn("w:ascii"), en_name)
-    rfonts.set(qn("w:hAnsi"), en_name)
-    rfonts.set(qn("w:eastAsia"), cn_name)
-    rfonts.set(qn("w:cs"), en_name)
-
-    # Also set via the python-docx Font API (duplicates ascii/hAnsi but keeps consistency)
-    word_style.font.name = en_name
-
-
-def _set_style_color(word_style, hex_color: str | None) -> None:
-    """Set explicit font color on a style, clearing any theme color."""
-    rpr = word_style.element.get_or_add_rPr()
-    _clear_theme_color(rpr)
-
-    if hex_color:
-        try:
-            word_style.font.color.rgb = RGBColor.from_string(hex_color)
-        except Exception:
-            word_style.font.color.rgb = RGBColor(0, 0, 0)
+def setup_normal_style(doc: Document, body_style) -> None:
+    """Override the Normal style with configured body font."""
+    style = doc.styles["Normal"]
+    
+    cn_font = getattr(body_style, "font_name", "宋体")
+    en_font = getattr(body_style, "font_name_ascii", "Times New Roman")
+    
+    _set_style_fonts(style, cn_font, en_font)
+    style.font.size = Pt(getattr(body_style, "font_size", 12))
+    style.font.bold = getattr(body_style, "bold", False)
+    style.font.italic = getattr(body_style, "italic", False)
+    color_value = getattr(body_style, "color", None)
+    if color_value:
+        style.font.color.rgb = RGBColor.from_string(color_value)
     else:
-        word_style.font.color.rgb = RGBColor(0, 0, 0)
-
-
-def configure_normal_style(doc: Document, body_style) -> None:
-    """Override the Normal style with configured body font (宋体 小四)."""
-    word_style = doc.styles["Normal"]
-    cn = getattr(body_style, "font_name", "宋体")
-    en = getattr(body_style, "font_name_ascii", "Times New Roman")
-
-    _set_style_fonts(word_style, cn, en)
-    word_style.font.size = Pt(getattr(body_style, "font_size", 12))
-    word_style.font.bold = getattr(body_style, "bold", False)
-    word_style.font.italic = getattr(body_style, "italic", False)
-    _set_style_color(word_style, getattr(body_style, "color", None))
-
-    pf = word_style.paragraph_format
+        style.font.color.rgb = RGBColor(0, 0, 0)  # Default to black if color is None
+    
+    pf = style.paragraph_format
     pf.line_spacing = getattr(body_style, "line_spacing", 1.5)
     align = getattr(body_style, "alignment", "justify")
     if align in _ALIGN:
         pf.alignment = _ALIGN[align]
 
 
-def configure_heading_styles(doc: Document, heading_config: dict) -> None:
+def setup_heading_styles(doc: Document, heading_config: dict) -> None:
     """Override Word heading styles 1–6 — clear themes, set 黑体 + explicit black.
 
     heading_config maps 'h1'..'h6' to HeadingStyle objects.
@@ -346,17 +304,9 @@ def configure_heading_styles(doc: Document, heading_config: dict) -> None:
             continue
 
         style_name = f"Heading {i}"
-
-        # Ensure the style exists
-        try:
-            doc.styles[style_name]
-        except KeyError:
-            s = doc.styles.add_style(style_name, 1)
-            s.base_style = doc.styles["Normal"]
-
         word_style = doc.styles[style_name]
 
-        # Font: clear themes, set explicit CJK + ASCII
+        # Font
         cn = getattr(hs, "font_name", "黑体")
         en = getattr(hs, "font_name_ascii", "Times New Roman")
         _set_style_fonts(word_style, cn, en)
@@ -366,8 +316,13 @@ def configure_heading_styles(doc: Document, heading_config: dict) -> None:
         word_style.font.bold = getattr(hs, "bold", True)
         word_style.font.italic = getattr(hs, "italic", False)
 
-        # Color: always explicit (black by default, not theme blue)
-        _set_style_color(word_style, getattr(hs, "color", None))
+        # Color
+        color_value = getattr(hs, "color", None)
+        if color_value:
+            word_style.font.color.rgb = RGBColor.from_string(color_value)
+        else:
+            word_style.font.color.rgb = RGBColor(0, 0, 0)  # Default to black if color is None
+
 
         # Paragraph format
         pf = word_style.paragraph_format

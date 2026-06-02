@@ -29,7 +29,7 @@ class TextStyle:
     space_before: int = 0  # pt, 段前间距
     space_after: int = 0  # pt, 段后间距
     first_line_indent: int = 0  # 首行缩进字符数
-    color: str | None = None  # RGB hex, None = auto
+    color: str | None = "000000"  # RGB hex, None = black
 
 
 @dataclass
@@ -44,7 +44,7 @@ class HeadingStyle:
     alignment: str = "left"
     space_before: int = 6
     space_after: int = 6
-    color: str | None = None
+    color: str | None = "000000"
 
 
 @dataclass
@@ -139,10 +139,10 @@ class PageConfig:
     """Page layout configuration."""
 
     size: str = "A4"  # A4 | Letter
-    margin_top: float = 2.54  # cm
-    margin_bottom: float = 2.54
-    margin_left: float = 3.18
-    margin_right: float = 3.18
+    top_margin: float = 2.54  # cm
+    bottom_margin: float = 2.54
+    left_margin: float = 3.18
+    right_margin: float = 3.18
 
 
 # =============================================================================

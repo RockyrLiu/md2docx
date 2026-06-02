@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"生成 DOCX: {output_path}")
     try:
-        doc = build_docx(ast, config, input_path, output_path)
+        doc = build_docx(ast, config, input_path)
     except Exception as exc:
         print(f"{RED}[Error]{RESET} 生成 DOCX 失败: {exc}", file=sys.stderr)
         return 1

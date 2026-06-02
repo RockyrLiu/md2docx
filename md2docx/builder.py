@@ -30,8 +30,8 @@ from md2docx.styles import (
     add_cover_title,
     apply_font_to_run,
     apply_format_to_para,
-    configure_heading_styles,
-    configure_normal_style,
+    setup_heading_styles,
+    setup_normal_style,
     format_table_content,
     insert_toc_field,
     make_three_line_table,
@@ -435,10 +435,10 @@ def _setup_page(doc: Document, config: AppConfig) -> None:
             section.page_height = Cm(29.7)
 
         # Margins
-        section.top_margin = Cm(config.page.margin_top)
-        section.bottom_margin = Cm(config.page.margin_bottom)
-        section.left_margin = Cm(config.page.margin_left)
-        section.right_margin = Cm(config.page.margin_right)
+        section.top_margin = Cm(config.page.top_margin)
+        section.bottom_margin = Cm(config.page.bottom_margin)
+        section.left_margin = Cm(config.page.left_margin)
+        section.right_margin = Cm(config.page.right_margin)
 
 
 # =============================================================================
@@ -552,7 +552,6 @@ def build_docx(
     ast: list[dict[str, Any]],
     config: AppConfig,
     md_path: str | Path,
-    output_path: str | Path,
 ) -> Document:
     """Build a python-docx Document from a parsed AST and configuration.
 
@@ -564,8 +563,6 @@ def build_docx(
         Full application configuration.
     md_path : str | Path
         Path to the source markdown file (for resolving image paths).
-    output_path : str | Path
-        Where the .docx will be saved (not used for building, just metadata).
 
     Returns
     -------
@@ -580,10 +577,10 @@ def build_docx(
     _setup_page(doc, config)
 
     # --- Normal style ---
-    configure_normal_style(doc, config.styles.body)
+    setup_normal_style(doc, config.styles.body)
 
     # --- Heading styles ---
-    configure_heading_styles(doc, config.styles.headings)
+    setup_heading_styles(doc, config.styles.headings)
 
     # --- Cover page ---
     if config.cover.enabled:
