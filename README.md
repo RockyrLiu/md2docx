@@ -21,7 +21,7 @@
 | 📑 **目录** | 自动插入 Word TOC 域，在 Word 中右键即可更新 |
 | 📐 **多级标题** | H1–H6 映射为 Word 内置标题样式，各级字体/字号/加粗/对齐独立可配 |
 | 📝 **正文排版** | 中英文双字体（宋体 + Times New Roman）、1.5 倍行距、首行缩进、两端对齐 |
-| 📊 **学术三线表** | GFM 表格 → 三线表（顶线 1.5pt、表头下线 0.75pt、底线 1.5pt） |
+| 📊 **学术三线表** | GFM 表格 → 三线表（顶线 1.5pt、表头下线 0.75pt、底线 1.5pt），支持表格内公式 |
 | 🖼️ **图片** | `![alt](path)` 自动居中嵌入，宽高自适应页面 |
 | 📋 **列表** | 有序/无序列表，支持嵌套层级 |
 | 🧮 **LaTeX 公式** | 行内 `$...$` 和块级 `$$...$$` 转换为 Word 原生 OMML 公式 |
@@ -58,6 +58,8 @@ uv tool install --editable .
 md2docx input.md                  # 使用默认 config.yaml
 md2docx input.md -c my_conf.yaml  # 自定义配置
 md2docx input.md -o output.docx   # 指定输出路径
+md2docx -ic                       # 生成默认配置文件模板
+md2docx -ic my_config.yaml        # 生成到指定路径
 md2docx -h                        # 查看帮助
 ```
 
@@ -93,19 +95,24 @@ uv run md2docx example/sample.md
 git clone https://github.com/example/md2docx.git && cd md2docx
 uv tool install --editable .
 
-# 2. 编辑配置文件（填入你的信息）
+# 2. 生成配置文件模板
+md2docx -ic example/config.yaml
+
+# 3. 编辑配置文件（填入你的信息）
 #    用任意编辑器修改 config.yaml 中的封面信息和样式
 
-# 3. 转换
-md2docx example/sample.md
+# 4. 转换
+md2docx example/sample.md -c example/config.yaml
 
-# 4. 查看输出
+# 5. 查看输出
 #    打开 example/sample.docx，在 Word 中右键目录 → 更新域
 ```
 
 ## ⚙️ 配置文件
 
 默认从当前目录的 `config.yaml` 加载，可通过 `-c` 指定自定义路径。缺失的键会自动回退到内置默认值。
+
+使用 `md2docx -ic` 可快速生成一份模板配置文件到当前目录（或通过 `md2docx -ic my.yaml` 指定路径）。
 
 ```yaml
 # === 封面 ===
@@ -170,7 +177,7 @@ page:
   margin_right: 3.18
 ```
 
-> 完整配置文件见 [config.yaml](config.yaml)。
+> 完整配置模板见 [md2docx/default_config.yaml](md2docx/default_config.yaml)，或通过 `md2docx -ic` 生成。
 
 ## 📐 中文字号对照
 
@@ -190,7 +197,6 @@ page:
 | 粗体 | `**text**` | 加粗 |
 | 斜体 | `*text*` | 斜体 |
 | 行内代码 | `` `code` `` | Consolas 等宽 |
-| 链接 | `[text](url)` | 超链接 |
 | 图片 | `![alt](path)` | 居中嵌入（相对路径相对于 .md 文件） |
 | 无序列表 | `- item` | 缩进 + 项目符号 |
 | 有序列表 | `1. item` | 缩进 + 数字编号 |
@@ -217,12 +223,12 @@ page:
 ```
 md2docx/
 ├── pyproject.toml               # 项目元数据 & 依赖声明
-├── config.yaml                  # 默认配置文件
 ├── README.md
 ├── md2docx/                     # 核心包
 │   ├── __init__.py
 │   ├── cli.py                   # CLI 命令行入口
 │   ├── config.py                # YAML 加载 & 配置数据类
+│   ├── default_config.yaml      # --init-config 使用的配置模板
 │   ├── parser.py                # Markdown → AST
 │   ├── styles.py                # Word 样式管理器
 │   ├── math_handler.py          # LaTeX → OMML

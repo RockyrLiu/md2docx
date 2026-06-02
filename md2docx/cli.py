@@ -6,8 +6,8 @@ Usage::
     md2docx input.md                  # Uses config.yaml, outputs input.docx
     md2docx input.md -c my_conf.yaml  # Custom config
     md2docx input.md -o output.docx   # Custom output name
-    md2docx --init-config             # Write default config.yaml and exit
-    md2docx --init-config my.yaml     # Write config to a custom path
+    md2docx -ic                       # Write default config.yaml and exit
+    md2docx -ic my_conf.yaml          # Write config to a custom path
 """
 
 from __future__ import annotations

@@ -11,3 +11,6 @@ __pycache__/
 
 # docx files
 *.docx
+
+# example config file
+/example/config.yaml

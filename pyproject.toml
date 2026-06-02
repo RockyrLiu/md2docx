@@ -22,3 +22,6 @@ dependencies = [
 
 [project.scripts]
 md2docx = "md2docx.cli:main"
+
+[tool.hatch.build]
+include = ["md2docx/default_config.yaml"]
