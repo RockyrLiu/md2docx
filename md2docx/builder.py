@@ -86,17 +86,6 @@ def _render_inline_run(
             run = para.add_run(text)
             apply_font_to_run(run, styles.code)
 
-    elif rtype == "link":
-        url = run_data.get("url", "")
-        children = run_data.get("children", [])
-        text = run_data.get("text", _extract_children_text(children))
-        if text:
-            run = para.add_run(text)
-            apply_font_to_run(run, styles.body)
-            run.underline = True
-            # Store hyperlink via XML
-            _add_hyperlink(run, url)
-
     elif rtype == "inline_math":
         latex = run_data.get("text", "")
         if latex:
@@ -139,15 +128,6 @@ def _extract_children_text(children: list[dict[str, Any]]) -> str:
     return "".join(parts)
 
 
-def _add_hyperlink(run, url: str) -> None:
-    """Wrap a run in a hyperlink element."""
-    r_elem = run._element
-    hyperlink = OxmlElement("w:hyperlink")
-    hyperlink.set(qn("r:id"), url)  # Simplified — needs relationships for real hyperlinks
-    # This is a simplified version; full hyperlinks need relationship management
-    # For now we just keep the underlined text
-
-
 # =============================================================================
 # Block renderers
 # =============================================================================
@@ -178,16 +158,8 @@ def _para_has_content(para) -> bool:
     return False
 
 
-def _render_heading(doc: Document, block: dict[str, Any], heading_styles: dict[str, HeadingStyle]) -> None:
-    """Render a heading block.
-
-    Font face, size, bold, and color are handled by the heading *style*
-    (setup_heading_styles).  We deliberately avoid applying run-level character
-    formatting here — Word's TOC field copies run-level rPr from the heading
-    into the TOC entry, which would otherwise override the TOC style font with
-    the heading font (e.g. 黑体).  Leaving runs clean lets the TOC style's font
-    (e.g. 宋体) take effect after "Update Field".
-    """
+def _render_heading(doc: Document, block: dict[str, Any]) -> None:
+    """Render a heading block."""
     level = block.get("level", 1)
     text = block.get("text", "")
     style_name = f"Heading {max(1, min(6, level))}"
@@ -508,7 +480,7 @@ def _render_block(doc: Document, block: dict[str, Any], styles: StyleConfig, md_
     btype = block.get("type", "")
 
     if btype == "heading":
-        _render_heading(doc, block, styles.headings)
+        _render_heading(doc, block)
 
     elif btype == "paragraph":
         _render_paragraph(doc, block, styles, md_path)
