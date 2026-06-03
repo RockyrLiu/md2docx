@@ -42,7 +42,7 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/example/md2docx.git
+git clone https://github.com/RockyrLiu/md2docx.git
 cd md2docx
 
 # 全局安装（发布模式）
@@ -75,7 +75,7 @@ uv tool upgrade md2docx   # 升级（从 PyPI/git 安装时可用）
 
 ```bash
 # 克隆项目
-git clone https://github.com/example/md2docx.git
+git clone https://github.com/RockyrLiu/md2docx.git
 cd md2docx
 
 # 安装依赖
@@ -92,7 +92,7 @@ uv run md2docx example/sample.md
 
 ```bash
 # 1. 克隆并安装
-git clone https://github.com/example/md2docx.git && cd md2docx
+git clone https://github.com/RockyrLiu/md2docx.git && cd md2docx
 uv tool install --editable .
 
 # 2. 生成配置文件模板
