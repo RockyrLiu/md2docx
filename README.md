@@ -140,12 +140,11 @@ md2docx example/sample.md -c example/config.yaml
 cover:
   enabled: true                   # 是否生成封面
   title: "报告标题"
-  subtitle: ""                    # 副标题（可选）
-  author: "姓名"
-  class_info: "班级学号"
-  teacher: "任课老师"
-  department: ""                  # 院系（可选）
-  date: ""                        # 留空使用当天日期
+  author: ""                      # 姓名
+  class_info: ""                  # 班级
+  student_id: ""                  # 学号
+  teacher: ""                     # 指导教师
+  date: ""                        # 日期，留空则使用当前日期
 
 # === 目录 ===
 toc:
