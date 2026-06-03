@@ -13,14 +13,35 @@
 
 **md2docx** 是一款命令行工具，将 Markdown 文件一键转换为符合学术规范、样式高度可定制的 Word（`.docx`）文档。适合撰写实验报告、课程论文、读书笔记等场景。
 
+### 🤔 为什么不用 Pandoc / Agent+Skill？
+
+| 方案 | 痛点 | md2docx |
+|------|------|---------------|
+| **Pandoc** | 默认样式粗糙，需要 reference docx；三线表、首行缩进等中文学术规范需大量定制；实际效果欠佳 | YAML 配置驱动，开箱即用：三线表、首行缩进、中英双字体等 |
+| **Agent+Skill** | 结果不确定，每次输出可能不同；依赖网络和 API；长文档 token 成本高；隐私内容不宜上传；数学公式转换效果不佳 | 确定性转换；纯本地运行，零网络依赖，零成本，隐私安全；数学公式完美转换 |
+
+## 🖼️ 效果预览
+
+> 以下为 [example/sample.md](example/sample.md) 的转换效果。
+
+<p align="center">
+  <img src="assets/sample-cover.png" alt="封面效果" width="45%">
+  <img src="assets/sample-toc.png" alt="目录效果" width="45%">
+</p>
+
+<p align="center">
+  <img src="assets/sample-body1.png" alt="正文排版" width="45%">
+  <img src="assets/sample-body2.png" alt="学术三线表+公式" width="45%">
+</p>
+
 ## ✨ 功能特性
 
 | 特性 | 说明 |
 |------|------|
-| 📔 **封面** | 可配置的报告标题、姓名、班级学号、指导教师、日期 |
-| 📑 **目录** | 自动插入 Word TOC 域，在 Word 中右键即可更新 |
+| 📔 **封面** | （可选）可配置的报告标题、姓名、班级学号、指导教师、日期 |
+| 📑 **目录** | （可选）自动插入 Word TOC 域，在 Word 中右键即可更新 |
 | 📐 **多级标题** | H1–H6 映射为 Word 内置标题样式，各级字体/字号/加粗/对齐独立可配 |
-| 📝 **正文排版** | 中英文双字体（宋体 + Times New Roman）、1.5 倍行距、首行缩进、两端对齐 |
+| 📝 **正文排版** | **自定义**，默认中英文双字体（宋体 + Times New Roman）、1.5 倍行距、首行缩进、两端对齐 |
 | 📊 **学术三线表** | GFM 表格 → 三线表（顶线 1.5pt、表头下线 0.75pt、底线 1.5pt），支持表格内公式 |
 | 🖼️ **图片** | `![alt](path)` 自动居中嵌入，宽高自适应页面 |
 | 📋 **列表** | 有序/无序列表，支持嵌套层级 |
@@ -223,19 +244,27 @@ page:
 ```
 md2docx/
 ├── pyproject.toml               # 项目元数据 & 依赖声明
+├── uv.lock                      # 依赖锁定文件
+├── .gitignore
+├── .python-version
+├── LICENSE.txt                  # MIT 许可证
 ├── README.md
+├── assets/                      # 效果截图
+│   ├── sample-cover.png
+│   ├── sample-toc.png
+│   ├── sample-body1.png
+│   └── sample-body2.png
 ├── md2docx/                     # 核心包
 │   ├── __init__.py
 │   ├── cli.py                   # CLI 命令行入口
 │   ├── config.py                # YAML 加载 & 配置数据类
-│   ├── default_config.yaml      # --init-config 使用的配置模板
+│   ├── default_config.yaml      # 默认配置文件模板
 │   ├── parser.py                # Markdown → AST
 │   ├── styles.py                # Word 样式管理器
 │   ├── math_handler.py          # LaTeX → OMML
 │   └── builder.py               # 文档构建器（核心编排逻辑）
 └── example/
-    ├── sample.md                # 示例输入
-    ├── sample.docx              # 示例输出
+    ├── sample.md                # 示例 Markdown 输入
     └── image.png                # 示例图片
 ```
 
