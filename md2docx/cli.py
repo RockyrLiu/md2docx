@@ -6,6 +6,7 @@ Usage::
     md2docx input.md                  # Uses config.yaml, outputs input.docx
     md2docx input.md -c my_conf.yaml  # Custom config
     md2docx input.md -o output.docx   # Custom output name
+    md2docx -v                        # Show version number and exit
     md2docx -ic                       # Write default config.yaml and exit
     md2docx -ic my_conf.yaml          # Write config to a custom path
 """
@@ -15,6 +16,7 @@ from __future__ import annotations
 import argparse
 import io
 import sys
+from importlib.metadata import version
 from pathlib import Path
 
 from md2docx.config import AppConfig, load_config
@@ -77,6 +79,12 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         default=None,
         help="输出 .docx 文件路径 (默认: 与输入文件同目录同名.docx)",
+    )
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=f"md2docx {version('md2docx')}",
+        help="显示版本号并退出",
     )
     parser.add_argument(
         "-ic", "--init-config",

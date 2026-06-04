@@ -14,7 +14,25 @@ description: 用自然语言将 Markdown 转换为 Word 文档。用户描述格
 
 ## 完整工作流程
 
-### 第一步：确认基本信息
+### 第0步：检测 md2docx 是否已安装
+
+首先运行 `md2docx -v` 检测 md2docx 是否已安装：
+
+```bash
+md2docx -v
+```
+
+- **如果正常输出版本号**（如 `md2docx 0.1.0`）→ 已安装，直接进入第1步
+- **如果报错**（command not found 等）→ 未安装，按以下流程安装：
+
+```bash
+git clone https://github.com/RockyrLiu/md2docx.git /tmp/md2docx
+cd /tmp/md2docx && pip install --editable .
+```
+
+安装完成后再次运行 `md2docx -v` 确认安装成功，再继续。
+
+### 第1步：确认基本信息
 
 从用户输入中提取，缺失则主动询问：
 
@@ -24,14 +42,7 @@ description: 用自然语言将 Markdown 转换为 Word 文档。用户描述格
 - **是否需要封面/目录**：默认都需要，用户说不要则关闭
 - **格式要求**：字体、字号、行距、缩进、对齐等
 
-如果 md2docx 未安装，先安装：
-
-```bash
-git clone https://github.com/RockyrLiu/md2docx.git /tmp/md2docx
-cd /tmp/md2docx && pip install --editable .
-```
-
-### 第二步：生成 YAML 配置
+### 第2步：生成 YAML 配置
 
 从下面的默认模板出发，只修改用户明确提到的字段。**未提及的字段保持模板中的默认值不变**。
 
@@ -173,13 +184,13 @@ page:
   right_margin: 3.18
 ```
 
-### 第三步：执行转换
+### 第3步：执行转换
 
 ```bash
 md2docx <输入文件.md> -c config.yaml -o <输出文件.docx>
 ```
 
-### 第四步：提醒用户
+### 第4步：提醒用户
 
 > 在 Word 中打开文档后，**右键目录 → 更新域**（或选中目录按 F9）。
 

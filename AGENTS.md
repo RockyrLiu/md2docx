@@ -83,6 +83,7 @@ python scripts/install_skill.py --project .  # 安装到当前项目
 md2docx input.md                    # 转换（使用默认 config.yaml）
 md2docx input.md -c my_conf.yaml    # 自定义配置
 md2docx input.md -o output.docx     # 指定输出路径
+md2docx -v                          # 查看版本号
 md2docx -ic                         # 生成默认配置模板
 md2docx -h                          # 查看帮助
 ```
