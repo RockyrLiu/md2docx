@@ -187,20 +187,35 @@ page:
 
 ### 安装 skill
 
-**方式一：让 Agent 自动安装**
+**方式一：Agent 自动安装（推荐）**
 
-在 AI 工具中输入：
+在 AI 工具中输入以下指令，Agent 会自动克隆仓库并安装：
 
 ```
-根据 https://raw.githubusercontent.com/RockyrLiu/md2docx/main/.agents/skills/md2docx.md 帮我安装 md2docx skill
+根据 https://raw.githubusercontent.com/RockyrLiu/md2docx/main/AGENTS.md 帮我安装 md2docx skill
 ```
 
-**方式二：手动复制**
+**方式二：运行安装脚本**
 
 ```bash
-mkdir -p .agents/skills
-cp /path/to/md2docx/.agents/skills/md2docx.md .agents/skills/
+python scripts/install_skill.py              # 全局安装（所有已检测到的智能体）
+python scripts/install_skill.py --project .  # 安装到当前项目
+python scripts/install_skill.py --list       # 查看已检测的智能体
+python scripts/install_skill.py --agent "Claude Code"  # 仅为指定智能体安装
+python scripts/install_skill.py --agent "Claude Code" "Cursor / AGENTS.md"  # 多个智能体
+python scripts/install_skill.py --dry-run    # 预览即将安装的位置
 ```
+
+**方式三：手动安装**
+
+将 `.agents/skills/md2docx/` 目录复制到对应智能体的 skills 目录下（`<name>/SKILL.md` 结构）：
+
+| 智能体 | 全局路径 | 项目路径 |
+|--------|----------|----------|
+| Claude Code | `~/.claude/skills/md2docx/SKILL.md` | `.claude/skills/md2docx/SKILL.md` |
+| OpenAI Codex | `~/.codex/skills/md2docx/SKILL.md` | `.codex/skills/md2docx/SKILL.md` |
+| OpenCode | `~/.config/opencode/skills/md2docx/SKILL.md` | `.opencode/skills/md2docx/SKILL.md` |
+| Cursor 等 | `~/.agents/skills/md2docx/SKILL.md` | `.agents/skills/md2docx/SKILL.md` |
 
 ### 使用
 

@@ -13,28 +13,63 @@
 
 ## 安装
 
-检测并安装（按优先级尝试 uv → pip）：
+按以下流程检测并安装（优先使用 uv，不可用时回退到 pip）：
 
 ```bash
-# 检测 Python 版本（需要 ≥3.10）
-python3 --version
+# 1. 检测 uv 是否可用（uv 可自动管理 Python 版本，无需手动检查）
+uv --version 2>/dev/null && echo "uv 可用" || echo "uv 不可用，回退到 pip"
 
-# 检测是否已安装
-md2docx --help 2>/dev/null && echo "已安装" || echo "需要安装"
+# 2. 若 uv 不可用，检测 Python 版本（需要 ≥3.10）
+if ! command -v uv &> /dev/null; then
+  python3 --version
+fi
 
-# 安装
+# 3. 克隆仓库
 git clone https://github.com/RockyrLiu/md2docx.git && cd md2docx
-uv tool install --editable . 2>/dev/null || \
-  pip install --editable . 2>/dev/null
+
+# 4. 安装（uv 优先）
+if command -v uv &> /dev/null; then
+  uv tool install --editable .
+else
+  pip install --editable .
+fi
 ```
 
-安装后，可以询问用户是否需要一并安装 **md2docx skill**（自然语言转换 skill），见下方。
+> **给 Agent 的指引**：先运行 `uv --version` 判断 uv 是否可用。若可用则全程使用 uv（`uv tool install` 安装项目、`uv run` 运行脚本），因为 uv 会自动获取合适的 Python 版本，无需手动检查。若 uv 不可用，再检测 `python3 --version` 确保 ≥3.10，然后回退到 pip 和 python。安装后，询问用户是否需要一并安装 **md2docx skill**（自然语言转换 skill），见下方。
 
 ## Skill：自然语言转换
 
-项目内置了 `.agents/skills/md2docx.md`，让用户可以用自然语言描述格式需求（如「标题黑体二号居中」「正文小四宋体1.5倍行距」），skill 会自动生成 YAML 配置并完成转换。
+项目内置了 `.agents/skills/md2docx/SKILL.md`，让用户可以用自然语言描述格式需求（如「标题黑体二号居中」「正文小四宋体1.5倍行距」），skill 会自动生成 YAML 配置并完成转换。
 
-**安装方式**：将 `.agents/skills/md2docx.md` 复制到用户项目的 `.agents/skills/` 目录下即可。用户即可通过 `/md2docx` 使用。
+**方式一：运行安装脚本**
+
+优先使用 `uv run`（若 uv 可用），否则回退到 `python`：
+
+```bash
+# uv 可用时
+uv run scripts/install_skill.py              # 全局安装（所有已检测到的智能体）
+uv run scripts/install_skill.py --list       # 列出检测到的智能体
+uv run scripts/install_skill.py --agent "Claude Code"  # 仅为指定智能体安装
+
+# uv 不可用时，回退到 python
+python scripts/install_skill.py              # 全局安装（所有已检测到的智能体）
+python scripts/install_skill.py --list       # 列出检测到的智能体
+python scripts/install_skill.py --agent "Claude Code"  # 仅为指定智能体安装
+python scripts/install_skill.py --project .  # 安装到当前项目
+```
+
+> **给 Agent 的指引**：在安装 skill 之前，**先询问用户要为哪个智能体安装**（除非用户已明确指定）。用 `--list` 查看已检测到的智能体后告知用户，让用户选择。用户选择后，使用 `--agent "智能体名称"` 参数精确安装。运行脚本时优先使用 `uv run`（若此前检测到 uv 可用），否则使用 `python`。
+
+**方式二：手动安装**
+
+将 `.agents/skills/md2docx/` 目录复制到对应智能体的 skills 目录下（`<name>/SKILL.md` 结构）：
+
+| 智能体 | 全局路径 | 项目路径 |
+|--------|----------|----------|
+| Claude Code | `~/.claude/skills/md2docx/SKILL.md` | `.claude/skills/md2docx/SKILL.md` |
+| OpenAI Codex | `~/.codex/skills/md2docx/SKILL.md` | `.codex/skills/md2docx/SKILL.md` |
+| OpenCode | `~/.config/opencode/skills/md2docx/SKILL.md` | `.opencode/skills/md2docx/SKILL.md` |
+| Cursor 等 | `~/.agents/skills/md2docx/SKILL.md` | `.agents/skills/md2docx/SKILL.md` |
 
 安装后，用户可以这样使用：
 
