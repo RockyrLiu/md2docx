@@ -335,19 +335,15 @@ def _render_inline_image(para, src: str, alt: str, md_path: Path) -> None:
 
 
 def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path = Path("."), level: int = 0) -> None:
-    """Render an ordered or unordered list."""
+    """Render an ordered or unordered list.
+
+    List content uses the body text style for font/size/color so that list
+    formatting follows the body style.  List-specific paragraph formatting
+    (line_spacing, indent) is still applied from the list config.
+    """
     list_style = styles.list
     ordered = block.get("ordered", False)
     items = block.get("items", [])
-
-    # Build a StyleConfig where body uses list-style fonts (for _render_inline_run)
-    list_body = TextStyle(
-        font_name=list_style.font_name,
-        font_name_ascii=list_style.font_name_ascii,
-        font_size=list_style.font_size,
-        line_spacing=list_style.line_spacing,
-    )
-    list_styles = StyleConfig(body=list_body)
 
     for idx, item in enumerate(items):
         para = doc.add_paragraph()
@@ -355,26 +351,26 @@ def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_p
         para.paragraph_format.line_spacing = list_style.line_spacing
         para.paragraph_format.left_indent = Cm(list_style.indent * 2.54 * (level + 1))
 
-        # Bullet or number prefix
+        # Bullet or number prefix — same font as body text
         if ordered:
             prefix = f"{idx + 1}. "
         else:
             prefix = "• "
 
         prefix_run = para.add_run(prefix)
-        apply_font_to_run(prefix_run, list_style)
+        apply_font_to_run(prefix_run, styles.body)
 
-        # Render inline runs (preserves math, bold, italic, etc.)
+        # Render inline runs using body text style (preserves math, bold, italic, etc.)
         inline_runs = item.get("inline_runs", [])
         if inline_runs:
             for run_data in inline_runs:
-                _render_inline_run(para, run_data, list_styles, md_path)
+                _render_inline_run(para, run_data, styles, md_path)
         else:
             # Fallback for plain text (backward compat)
             text = item.get("text", "")
             if text:
                 run = para.add_run(text)
-                apply_font_to_run(run, list_style)
+                apply_font_to_run(run, styles.body)
 
         # Handle nested lists
         for child in item.get("children", []):
