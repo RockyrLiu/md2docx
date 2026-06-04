@@ -271,7 +271,9 @@ skill 会自动：理解你的格式需求 → 生成 `config.yaml` → 执行 `
 ```
 md2docx/
 ├── pyproject.toml               # 项目元数据 & 依赖声明
-├── uv.lock                      # 依赖锁定文件
+├── requirements.txt             # pip 依赖列表
+├── uv.lock                      # uv 依赖锁定文件
+├── AGENTS.md                    # Agent 安装指引
 ├── .gitignore
 ├── .python-version
 ├── LICENSE.txt                  # MIT 许可证
@@ -290,7 +292,12 @@ md2docx/
 │   ├── styles.py                # Word 样式管理器
 │   ├── math_handler.py          # LaTeX → OMML
 │   └── builder.py               # 文档构建器（核心编排逻辑）
-└── example/
+├── scripts/                     # 辅助脚本
+│   └── install_skill.py         # Skill 安装脚本
+├── .agents/                     # Agent skill 定义
+│   └── skills/md2docx/
+│       └── SKILL.md
+└── example/                     # 示例文件
     ├── sample.md                # 示例 Markdown 输入
     └── image.png                # 示例图片
 ```
