@@ -1,0 +1,10 @@
+# md2docx 依赖列表
+# 安装方式：pip install -r requirements.txt
+# 或：pip install --editable . （推荐，会同时注册 CLI 命令）
+
+latex2mathml>=3.81.0
+lxml>=6.1.1
+mistune>=3.2.1
+pillow>=12.2.0
+python-docx>=1.2.0
+pyyaml>=6.0.3

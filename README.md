@@ -6,7 +6,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-≥3.10-blue?logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-  <img src="https://img.shields.io/badge/uv-ready-e6b422?logo=pypi&logoColor=white" alt="uv">
+  <img src="https://img.shields.io/badge/pip-install-3776AB?logo=pypi&logoColor=white" alt="pip">
 </p>
 
 ---
@@ -48,64 +48,42 @@
 | 🧮 **LaTeX 公式** | 行内 `$...$` 和块级 `$$...$$` 转换为 Word 原生 OMML 公式 |
 | 💻 **代码块** | 等宽字体 + 灰色背景 |
 | 💬 **引用块** | 左侧竖线 + 楷体斜体 |
-| ⚙️ **YAML 驱动** | 所有样式通过单个配置文件控制，无需修改代码 |
+| ⚙️ **自然语言配置** | 用自然语言描述格式需求，让 AI 生成 YAML 配置文件，无需手写 |
 
 ## 📦 安装
 
 ### 环境要求
 
-- **Python** ≥ 3.10
-- **[uv](https://docs.astral.sh/uv/)** — 现代 Python 包管理器
+- **Python** ≥ 3.10（唯一硬性要求）
+- 以下包管理器**任选其一**：pip / uv
 
-### 方式一：全局安装（推荐日常使用）
+### 方式一：让 Agent 自动安装
 
-安装为全局命令行工具后，可在任意目录直接调用 `md2docx`：
+在 OpenCode、Claude Code、Cursor、Codex 等 AI 工具中输入：
+
+```
+根据 https://raw.githubusercontent.com/RockyrLiu/md2docx/main/AGENTS.md 帮我安装 md2docx
+```
+
+agent 会自行读取安装指引，克隆项目、安装依赖、复制 skill，全程无需手动操作。
+
+### 方式二：pip
 
 ```bash
-# 克隆项目
-git clone https://github.com/RockyrLiu/md2docx.git
-cd md2docx
+git clone https://github.com/RockyrLiu/md2docx.git && cd md2docx
+pip install --editable .
+```
 
-# 全局安装（发布模式）
-uv tool install .
+### 方式三：uv
 
-# 或安装为可编辑模式（源码改动即时生效，推荐开发）
+```bash
+git clone https://github.com/RockyrLiu/md2docx.git && cd md2docx
+
+# 全局安装
 uv tool install --editable .
-```
 
-安装完成后，在任意目录即可使用：
-
-```bash
-md2docx input.md                  # 使用默认 config.yaml
-md2docx input.md -c my_conf.yaml  # 自定义配置
-md2docx input.md -o output.docx   # 指定输出路径
-md2docx -ic                       # 生成默认配置文件模板
-md2docx -ic my_config.yaml        # 生成到指定路径
-md2docx -h                        # 查看帮助
-```
-
-**管理全局安装的工具：**
-
-```bash
-uv tool list              # 查看已安装的工具
-uv tool uninstall md2docx # 卸载
-uv tool upgrade md2docx   # 升级（从 PyPI/git 安装时可用）
-```
-
-### 方式二：本地开发环境
-
-```bash
-# 克隆项目
-git clone https://github.com/RockyrLiu/md2docx.git
-cd md2docx
-
-# 安装依赖
+# 或仅项目内使用
 uv sync
-```
-
-通过 `uv run` 运行：
-
-```bash
 uv run md2docx example/sample.md
 ```
 
@@ -114,7 +92,7 @@ uv run md2docx example/sample.md
 ```bash
 # 1. 克隆并安装
 git clone https://github.com/RockyrLiu/md2docx.git && cd md2docx
-uv tool install --editable .
+pip install --editable .            # 或 uv tool install --editable .
 
 # 2. 生成配置文件模板
 md2docx -ic example/config.yaml
@@ -198,6 +176,39 @@ page:
 ```
 
 > 完整配置模板见 [md2docx/default_config.yaml](md2docx/default_config.yaml)，或通过 `md2docx -ic` 生成。
+
+## 🗣️ 自然语言转换（全流程 AI 驱动）
+
+> ⚠️ **注意**：md2docx 转换工具本身**完全离线运行**。但此 skill 需要借助 AI 助手（OpenCode、Claude Code、Codex 等）理解你的自然语言需求，**使用在线 LLM Agent 时需要联网**。
+
+**手写 YAML 太麻烦？** 项目内置了 AI skill，一句话描述格式需求，skill 自动完成**生成配置 + 执行转换**全流程。
+
+### 安装 skill
+
+**方式一：让 Agent 自动安装**
+
+在 AI 工具中输入：
+
+```
+根据 https://raw.githubusercontent.com/RockyrLiu/md2docx/main/.agents/skills/md2docx.md 帮我安装 md2docx skill
+```
+
+**方式二：手动复制**
+
+```bash
+mkdir -p .agents/skills
+cp /path/to/md2docx/.agents/skills/md2docx.md .agents/skills/
+```
+
+### 使用
+
+在 AI 工具中直接调用，用自然语言描述即可：
+
+```
+/md2docx 把 report.md 转成 Word，正文宋体小四1.5倍行距，封面标题改成"数字电路实验报告"，作者张三
+```
+
+skill 会自动：理解你的格式需求 → 生成 `config.yaml` → 执行 `md2docx` 命令 → 输出 `.docx` 文件。
 
 ## 📐 中文字号对照
 
