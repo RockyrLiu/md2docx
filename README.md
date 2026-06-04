@@ -166,6 +166,8 @@ styles:
     font_size: 12
     italic: true
 
+  render_thematic_break: false     # 是否渲染 --- 分隔线（默认不渲染）
+
 # === 页面设置 ===
 page:
   size: "A4"
@@ -234,7 +236,7 @@ skill 会自动：理解你的格式需求 → 生成 `config.yaml` → 执行 `
 | 表格 | GFM 表格 | 学术三线表 |
 | 代码块 | ```` ```lang ```` | 灰色背景 + 等宽字体 |
 | 引用 | `> quote` | 左侧竖线 + 楷体 |
-| 分隔线 | `---` | 水平线 |
+| 分隔线 | `---` | 水平线（默认不渲染，可通过 `render_thematic_break` 开启） |
 | 行内公式 | `$E=mc^2$` | OMML 原生公式 |
 | 块级公式 | `$$\frac{a}{b}$$` | 居中 OMML 公式 |
 

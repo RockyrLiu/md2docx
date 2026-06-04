@@ -105,6 +105,7 @@ class StyleConfig:
     list: ListStyle = field(default_factory=ListStyle)
     code: CodeStyle = field(default_factory=CodeStyle)
     blockquote: BlockquoteStyle = field(default_factory=BlockquoteStyle)
+    render_thematic_break: bool = False  # 是否渲染 Markdown --- 分隔线
 
 
 # =============================================================================
@@ -274,6 +275,8 @@ def load_config(path: str | Path) -> AppConfig:
     bq_data = styles_data.get("blockquote", {})
     blockquote = _dict_to_dataclass(BlockquoteStyle, bq_data)
 
+    render_thematic_break = styles_data.get("render_thematic_break", False)
+
     styles = StyleConfig(
         body=body,
         headings=headings,
@@ -281,6 +284,7 @@ def load_config(path: str | Path) -> AppConfig:
         list=list_style,
         code=code,
         blockquote=blockquote,
+        render_thematic_break=render_thematic_break,
     )
 
     # --- Page ---

@@ -534,7 +534,8 @@ def _render_block(doc: Document, block: dict[str, Any], styles: StyleConfig, md_
         _render_blockquote(doc, block, styles, md_path)
 
     elif btype == "thematic_break":
-        doc.add_paragraph("—" * 30)
+        if styles.render_thematic_break:
+            doc.add_paragraph("—" * 30)
 
     elif btype == "blank_line":
         pass  # skip — paragraph spacing handles separation
