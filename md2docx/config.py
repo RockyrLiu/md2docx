@@ -95,6 +95,20 @@ class BlockquoteStyle:
     border_left_color: str = "999999"
 
 
+# =============================================================================
+# Built-in heading defaults
+# =============================================================================
+
+HEADING_DEFAULTS: dict[str, HeadingStyle] = {
+    "h1": HeadingStyle(font_size=22, bold=True, alignment="center", space_before=12, space_after=12),
+    "h2": HeadingStyle(font_size=16, bold=True, space_before=6, space_after=6),
+    "h3": HeadingStyle(font_size=14, bold=True, space_before=6, space_after=6),
+    "h4": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
+    "h5": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
+    "h6": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
+}
+
+
 @dataclass
 class StyleConfig:
     """Aggregate style configuration."""
@@ -106,6 +120,16 @@ class StyleConfig:
     code: CodeStyle = field(default_factory=CodeStyle)
     blockquote: BlockquoteStyle = field(default_factory=BlockquoteStyle)
     render_thematic_break: bool = False  # 是否渲染 Markdown --- 分隔线
+
+    def __post_init__(self):
+        """Populate built-in heading defaults when no headings are provided.
+
+        Ensures the no-config path (bare ``AppConfig()``) and the YAML path
+        produce consistent heading styles.  When headings are explicitly set
+        (e.g. from a YAML file via ``_parse_headings``) this is a no-op.
+        """
+        if not self.headings:
+            self.headings = dict(HEADING_DEFAULTS)
 
 
 # =============================================================================
@@ -169,20 +193,6 @@ class AppConfig:
     toc: TocConfig = field(default_factory=TocConfig)
     styles: StyleConfig = field(default_factory=StyleConfig)
     page: PageConfig = field(default_factory=PageConfig)
-
-
-# =============================================================================
-# Built-in heading defaults
-# =============================================================================
-
-HEADING_DEFAULTS: dict[str, HeadingStyle] = {
-    "h1": HeadingStyle(font_size=22, bold=True, alignment="center", space_before=12, space_after=12),
-    "h2": HeadingStyle(font_size=16, bold=True, space_before=6, space_after=6),
-    "h3": HeadingStyle(font_size=14, bold=True, space_before=6, space_after=6),
-    "h4": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
-    "h5": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
-    "h6": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
-}
 
 
 # =============================================================================

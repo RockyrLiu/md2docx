@@ -9,3 +9,6 @@ __pycache__/
 
 # example config file
 /example/config.yaml
+
+# test files
+/example/test.md
