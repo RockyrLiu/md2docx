@@ -165,7 +165,9 @@ styles:
     font_name_ascii: "Consolas"
     font_size: 10
     line_spacing: 1.0
-    background_color: "F2F2F2"
+    border_color: "999999"
+    border_width: 0.75
+    show_border: true
 
   blockquote:
     font_name: "楷体"

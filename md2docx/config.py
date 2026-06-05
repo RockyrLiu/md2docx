@@ -79,7 +79,9 @@ class CodeStyle:
     font_name_ascii: str = "Consolas"
     font_size: int = 10
     line_spacing: float = 1.0
-    background_color: str = "F2F2F2"
+    border_color: str = "999999"
+    border_width: float = 0.75  # pt
+    show_border: bool = True
 
 
 @dataclass

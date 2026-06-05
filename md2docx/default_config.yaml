@@ -134,7 +134,9 @@ styles:
     font_name_ascii: "Consolas"
     font_size: 10
     line_spacing: 1.0
-    background_color: "F2F2F2"       # 背景灰色
+    border_color: "999999"           # 代码框边框颜色
+    border_width: 0.75               # 边框粗细 (pt)
+    show_border: true                # 是否显示边框
 
   # ===== 分隔线渲染 =====
   render_thematic_break: false        # 是否将 --- 分隔线渲染到 Word 中

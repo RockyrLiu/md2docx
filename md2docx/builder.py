@@ -36,8 +36,8 @@ from md2docx.styles import (
     insert_toc_field,
     make_three_line_table,
     set_para_left_border,
-    set_para_shading,
     set_run_font,
+    _set_table_border,
     _is_math_run,
     SIZE_SANHAO,
 )
@@ -379,23 +379,72 @@ def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_p
 
 
 def _render_code_block(doc: Document, block: dict[str, Any], code_style: CodeStyle) -> None:
-    """Render a fenced code block."""
+    """Render a fenced code block as a bordered table box.
+
+    Each line of code becomes a separate paragraph inside a single table cell.
+    The table provides the visual "code frame" with borders on all four sides.
+    """
     text = block.get("text", "")
-    para = doc.add_paragraph()
 
-    set_para_shading(para, code_style.background_color)
-    para.paragraph_format.space_before = Pt(3)
-    para.paragraph_format.space_after = Pt(3)
-    para.paragraph_format.left_indent = Cm(0.5)
-    para.paragraph_format.line_spacing = code_style.line_spacing
+    # Guard: skip empty code blocks
+    if not text.strip():
+        return
 
-    for line in text.split("\n"):
-        if para.text:
-            # Add line break for multi-line
-            run = para.add_run("\n" + line)
-        else:
+    lines = text.split("\n")
+    if not lines:
+        return
+
+    # --- Create single-cell table ---
+    table = doc.add_table(rows=1, cols=1)
+
+    # Remove default table style (e.g. "Table Grid") to avoid border interference
+    tbl_pr = table._tbl.tblPr
+    if tbl_pr is None:
+        tbl_pr = OxmlElement("w:tblPr")
+        table._tbl.insert(0, tbl_pr)
+    for existing_style in tbl_pr.findall(qn("w:tblStyle")):
+        tbl_pr.remove(existing_style)
+
+    # --- Apply table-level borders ---
+    if code_style.show_border:
+        border_sz = int(code_style.border_width * 8)  # pt → eighths
+        for position in ("top", "bottom", "left", "right"):
+            _set_table_border(table, position, border_sz, code_style.border_color)
+    else:
+        for position in ("top", "bottom", "left", "right"):
+            _set_table_border(table, position, 0, "auto")
+
+    # No interior borders (single cell)
+    _set_table_border(table, "insideH", 0, "auto")
+    _set_table_border(table, "insideV", 0, "auto")
+
+    # --- Fill the cell ---
+    cell = table.cell(0, 0)
+
+    # Remove the default empty paragraph — we add our own per-line paragraphs
+    for p in cell.paragraphs:
+        p._element.getparent().remove(p._element)
+
+    # --- Render each line as a separate paragraph ---
+    for i, line in enumerate(lines):
+        para = cell.add_paragraph()
+
+        para.paragraph_format.line_spacing = code_style.line_spacing
+        para.paragraph_format.space_before = Pt(1)
+        para.paragraph_format.space_after = Pt(0)
+
+        if line:
             run = para.add_run(line)
-        apply_font_to_run(run, code_style)
+            apply_font_to_run(run, code_style)
+        else:
+            # Preserve empty lines with a zero-width space to prevent collapsing
+            run = para.add_run("​")
+            apply_font_to_run(run, code_style)
+
+    # --- Spacer after code block ---
+    spacer = doc.add_paragraph()
+    spacer.paragraph_format.space_before = Pt(3)
+    spacer.paragraph_format.space_after = Pt(3)
 
 
 def _render_blockquote(doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path = Path(".")) -> None:
