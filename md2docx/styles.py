@@ -83,7 +83,7 @@ def set_run_font(
 
 def set_para_format(
     para,
-    line_spacing: float = 1.5,
+    line_spacing: float = 1.0,
     alignment: str = "left",
     first_line_indent_chars: int = 0,
     font_size_for_indent: Pt | None = None,
@@ -103,9 +103,9 @@ def set_para_format(
         para.alignment = _ALIGN[alignment]
 
     if first_line_indent_chars > 0 and font_size_for_indent is not None:
-        # 1 Chinese char ≈ font_size in pt → cm
-        indent_cm = first_line_indent_chars * font_size_for_indent.pt * 0.0353
-        para.paragraph_format.first_line_indent = Cm(indent_cm)
+        # 1 Chinese char ≈ font_size in pt
+        indent_pt = first_line_indent_chars * font_size_for_indent.pt
+        para.paragraph_format.first_line_indent = Pt(indent_pt)
 
     if space_before_pt is not None:
         para.paragraph_format.space_before = Pt(space_before_pt)
@@ -171,7 +171,7 @@ def apply_format_to_para(para, style) -> None:
     """Apply paragraph formatting from a TextStyle config (spacing, indent, alignment)."""
     set_para_format(
         para,
-        line_spacing=getattr(style, "line_spacing", 1.5),
+        line_spacing=getattr(style, "line_spacing", 1.0),
         alignment=getattr(style, "alignment", "left"),
         first_line_indent_chars=getattr(style, "first_line_indent", 0),
         font_size_for_indent=Pt(getattr(style, "font_size", 12)),
@@ -329,7 +329,7 @@ def setup_normal_style(doc: Document, body_style) -> None:
         style.font.color.rgb = RGBColor(0, 0, 0)  # Default to black if color is None
     
     pf = style.paragraph_format
-    pf.line_spacing = getattr(body_style, "line_spacing", 1.5)
+    pf.line_spacing = getattr(body_style, "line_spacing", 1.0)
     pf.space_before = Pt(getattr(body_style, "space_before", 0))
     pf.space_after = Pt(getattr(body_style, "space_after", 0))
     align = getattr(body_style, "alignment", "justify")

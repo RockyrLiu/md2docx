@@ -22,13 +22,13 @@ class TextStyle:
     font_name: str = "宋体"
     font_name_ascii: str = "Times New Roman"
     font_size: int = 12  # pt
-    line_spacing: float = 1.5
+    line_spacing: float = 1.0
     bold: bool = False
     italic: bool = False
     alignment: str = "left"  # left | center | right | justify
     space_before: int = 0  # pt, 段前间距
     space_after: int = 0  # pt, 段后间距
-    first_line_indent: int = 0  # 首行缩进字符数
+    first_line_indent: int = 2  # 首行缩进字符数
     color: str | None = "000000"  # RGB hex, None = black
 
 
@@ -67,7 +67,7 @@ class ListStyle:
     font_name: str = "宋体"
     font_name_ascii: str = "Times New Roman"
     font_size: int = 12
-    line_spacing: float = 1.5
+    line_spacing: float = 1.0
     indent: float = 2  # 缩进字符数，0 表示不缩进
 
 
@@ -102,12 +102,12 @@ class BlockquoteStyle:
 # =============================================================================
 
 HEADING_DEFAULTS: dict[str, HeadingStyle] = {
-    "h1": HeadingStyle(font_size=22, bold=True, alignment="center", space_before=12, space_after=12),
-    "h2": HeadingStyle(font_size=16, bold=True, space_before=6, space_after=6),
-    "h3": HeadingStyle(font_size=14, bold=True, space_before=6, space_after=6),
-    "h4": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
-    "h5": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
-    "h6": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),
+    "h1": HeadingStyle(font_size=16, bold=True, alignment="center", space_before=12, space_after=12),   # 三号
+    "h2": HeadingStyle(font_size=14, bold=True, alignment="center", space_before=6, space_after=6),   # 四号居中
+    "h3": HeadingStyle(font_size=12, bold=True, space_before=6, space_after=6),                        # 小四居左
+    "h4": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),                        # 小四居左
+    "h5": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),                        # 小四居左
+    "h6": HeadingStyle(font_size=12, bold=True, space_before=3, space_after=3),                        # 小四居左
 }
 
 

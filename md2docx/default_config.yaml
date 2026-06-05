@@ -38,7 +38,7 @@ styles:
     font_name: "宋体"
     font_name_ascii: "Times New Roman"
     font_size: 12                    # 小四号 = 12pt
-    line_spacing: 1.5
+    line_spacing: 1.0                  # 单倍行距
     bold: false
     italic: false
     alignment: "justify"             # left / center / right / justify
@@ -52,7 +52,7 @@ styles:
     h1:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
-      font_size: 22                  # 二号
+      font_size: 16                  # 三号
       bold: true
       italic: false
       alignment: "center"
@@ -62,17 +62,17 @@ styles:
     h2:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
-      font_size: 16                  # 三号
+      font_size: 14                  # 四号
       bold: true
       italic: false
-      alignment: "left"
+      alignment: "center"
       space_before: 6
       space_after: 6
       color: null
     h3:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
-      font_size: 14                  # 四号
+      font_size: 12                  # 小四
       bold: true
       italic: false
       alignment: "left"
@@ -92,7 +92,7 @@ styles:
     h5:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
-      font_size: 12
+      font_size: 12                  # 小四
       bold: true
       italic: false
       alignment: "left"
@@ -102,7 +102,7 @@ styles:
     h6:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
-      font_size: 12
+      font_size: 12                  # 小四
       bold: true
       italic: false
       alignment: "left"
@@ -125,7 +125,7 @@ styles:
     font_name: "宋体"
     font_name_ascii: "Times New Roman"
     font_size: 12
-    line_spacing: 1.5
+    line_spacing: 1.0                  # 单倍行距
     indent: 2                        # 缩进字符数，0 表示不缩进
 
   # ===== 代码块样式 =====
