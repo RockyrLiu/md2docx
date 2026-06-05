@@ -126,7 +126,7 @@ styles:
     font_name_ascii: "Times New Roman"
     font_size: 12
     line_spacing: 1.5
-    indent: 0.5                      # 缩进（英寸）
+    indent: 2                        # 缩进字符数，0 表示不缩进
 
   # ===== 代码块样式 =====
   code:

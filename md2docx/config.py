@@ -68,7 +68,7 @@ class ListStyle:
     font_name_ascii: str = "Times New Roman"
     font_size: int = 12
     line_spacing: float = 1.5
-    indent: float = 0.5  # inches
+    indent: float = 2  # 缩进字符数，0 表示不缩进
 
 
 @dataclass

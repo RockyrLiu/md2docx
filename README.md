@@ -156,6 +156,11 @@ styles:
     header_bold: true
     alignment: "center"
 
+  list:                           # 列表
+    font_name: "宋体"
+    font_size: 12                 # 小四
+    indent: 2                     # 缩进（字符数）
+
   code:                           # 代码块
     font_name: "Consolas"
     font_size: 10

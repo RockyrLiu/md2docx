@@ -349,7 +349,7 @@ def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_p
         para = doc.add_paragraph()
         para.alignment = WD_ALIGN_PARAGRAPH.LEFT
         para.paragraph_format.line_spacing = list_style.line_spacing
-        para.paragraph_format.left_indent = Cm(list_style.indent * 2.54 * (level + 1))
+        para.paragraph_format.left_indent = Cm(list_style.indent * list_style.font_size * 0.0353 * (level + 1))
 
         # Bullet or number prefix — same font as body text
         if ordered:

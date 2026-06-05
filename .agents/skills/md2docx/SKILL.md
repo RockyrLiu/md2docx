@@ -158,7 +158,7 @@ styles:
     font_name_ascii: "Times New Roman"
     font_size: 12
     line_spacing: 1.5
-    indent: 0.5
+    indent: 2                        # 缩进字符数
 
   code:
     font_name: "Consolas"
