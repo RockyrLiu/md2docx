@@ -108,6 +108,25 @@ md2docx example/sample.md -c example/config.yaml
 #    打开 example/sample.docx，在 Word 中右键目录 → 更新域
 ```
 
+## 📋 基本命令
+
+```
+md2docx <输入文件> [选项]
+```
+
+| 命令 | 说明 |
+|------|------|
+| `md2docx input.md` | 基本转换，使用当前目录的 `config.yaml`，输出 `input.docx` |
+| `md2docx input.md -c my_conf.yaml` | 指定配置文件 |
+| `md2docx input.md -o output.docx` | 指定输出路径 |
+| `md2docx input.md -c my_conf.yaml -o output.docx` | 同时指定配置和输出 |
+| `md2docx -ic` | 在当前目录生成默认配置文件模板 `config.yaml` |
+| `md2docx -ic my_conf.yaml` | 生成配置文件模板到指定路径 |
+| `md2docx -v` | 显示版本号 |
+| `md2docx -h` | 显示帮助信息 |
+
+> **提示**：配置文件不存在时，工具会使用内置默认值继续转换，并在终端输出警告。
+
 ## ⚙️ 配置文件
 
 默认从当前目录的 `config.yaml` 加载，可通过 `-c` 指定自定义路径。缺失的键会自动回退到内置默认值。
