@@ -60,6 +60,94 @@ def _process_children(mathml_el: Any) -> list[Any]:
     return result
 
 
+# ---------------------------------------------------------------------------
+# Fence / delimiter helpers
+# ---------------------------------------------------------------------------
+
+
+def _is_delimiter_char(ch: str) -> bool:
+    """Return True if *ch* is a valid stretchy delimiter (bracket, brace, etc.).
+
+    ``\right.`` produces ``.`` which maps to no delimiter — we exclude it here.
+    """
+    return ch in {
+        "{", "}", "(", ")", "[", "]", "|",
+        "‖",                           # ‖ double vertical line
+        "⟨", "⟩",                 # ⟨ ⟩
+        "⌈", "⌉",                 # ⌈ ⌉
+        "⌊", "⌋",                 # ⌊ ⌋
+    }
+
+
+def _handle_fenced_mrow(children: list) -> Any:
+    """Wrap non-fence children in an OMML ``m:d`` delimiter with stretchy brackets.
+
+    Handles ``\\begin{cases}``, ``\\left\\{ ... \\right.``, and similar
+    constructions where MathML uses ``<mo fence="true">`` alongside the content.
+    """
+    open_ch: str | None = None
+    close_ch: str | None = None
+    content_children: list = []
+
+    for child in children:
+        try:
+            ctag = (etree.QName(child.tag).localname
+                    if hasattr(child, "tag") else "")
+        except Exception:
+            ctag = ""
+        is_fence = (
+            ctag == "mo"
+            and child.get("fence") == "true"
+        )
+        if is_fence and _is_delimiter_char((child.text or "").strip()):
+            ch = (child.text or "").strip()
+            form = child.get("form", "")
+            if form == "prefix" or (form != "postfix" and open_ch is None):
+                open_ch = ch
+            elif form == "postfix":
+                close_ch = ch
+        else:
+            content_children.append(child)
+
+    d = _math_elt("d")
+    d_pr = _math_elt("dPr")
+
+    # Always set both begChr and endChr explicitly.  OMML defaults are
+    # "(" for begChr and ")" for endChr — we override with empty string
+    # when no delimiter was detected (e.g. cases has no closing bracket,
+    # \right. produces no delimiter).
+    beg = _math_elt("begChr")
+    beg.set(qn("m:val"), open_ch if open_ch else "")
+    d_pr.append(beg)
+
+    end = _math_elt("endChr")
+    end.set(qn("m:val"), close_ch if close_ch else "")
+    d_pr.append(end)
+
+    d.append(d_pr)
+
+    e = _math_elt("e")
+    for child in content_children:
+        result = _mathml_to_omml(child)
+        _append_children(e, result)
+    d.append(e)
+
+    return d
+
+
+def _mrow_has_fence(children) -> bool:
+    """Return True if any child of the mrow is a fence ``<mo>``."""
+    for child in children:
+        try:
+            ctag = (etree.QName(child.tag).localname
+                    if hasattr(child, "tag") else "")
+        except Exception:
+            ctag = ""
+        if ctag == "mo" and child.get("fence") == "true":
+            return True
+    return False
+
+
 def _mathml_to_omml(el: Any) -> Any:
     """Recursively convert a MathML element (lxml) into OMML element(s).
 
@@ -74,10 +162,15 @@ def _mathml_to_omml(el: Any) -> Any:
 
     # --- Leaf elements ---
     if tag in ("mi", "mn", "mo", "mtext"):
+        # Fence <mo> elements are handled by their parent mrow; if an
+        # isolated fence mo reaches here it's treated as regular text.
         return _math_run(text)
 
-    # --- mrow: group ---
+    # --- mrow: group (with fence detection for cases, \left\{, etc.) ---
     if tag == "mrow":
+        children = list(el)  # type: ignore[arg-type]
+        if _mrow_has_fence(children):
+            return _handle_fenced_mrow(children)
         return _process_children(el)
 
     # --- mfrac: fraction ---
