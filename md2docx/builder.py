@@ -351,6 +351,11 @@ def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_p
         para.paragraph_format.line_spacing = list_style.line_spacing
         para.paragraph_format.left_indent = Cm(list_style.indent * list_style.font_size * 0.0353 * (level + 1))
 
+        # First-line indent for list items (matches body text indentation)
+        first_indent_chars = getattr(list_style, "first_line_indent", 0)
+        if first_indent_chars > 0:
+            para.paragraph_format.first_line_indent = Pt(first_indent_chars * list_style.font_size)
+
         # Bullet or number prefix — same font as body text
         if ordered:
             prefix = f"{idx + 1}. "

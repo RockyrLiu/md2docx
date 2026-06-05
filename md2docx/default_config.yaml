@@ -126,7 +126,8 @@ styles:
     font_name_ascii: "Times New Roman"
     font_size: 12
     line_spacing: 1.0                  # 单倍行距
-    indent: 2                        # 缩进字符数，0 表示不缩进
+    indent: 0                          # 列表整体左缩进字符数，0 表示不缩进
+    first_line_indent: 2               # 列表项首行缩进字符数
 
   # ===== 代码块样式 =====
   code:
