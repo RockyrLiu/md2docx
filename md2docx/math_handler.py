@@ -7,6 +7,7 @@ Fallback: If latex2mathml fails, renders the raw LaTeX as monospace text.
 """
 
 from __future__ import annotations
+import re
 from typing import Any
 
 from docx import Document
@@ -401,6 +402,12 @@ def latex_to_omml(latex: str) -> Any | None:
     """
     try:
         from latex2mathml.converter import convert as latex2mathml_convert
+
+        # Strip optional spacing argument from line breaks:
+        #   \\[6pt]  → \\
+        #   \\*[10pt] → \\*
+        # latex2mathml doesn't handle these and renders "[]" as literal text.
+        latex = re.sub(r'(\\\\\*?)\[[^\]]*\]', r'\1', latex)
 
         # Convert LaTeX to MathML string
         mathml_str = latex2mathml_convert(latex)
