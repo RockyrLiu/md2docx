@@ -173,6 +173,18 @@ class TocConfig:
 
 
 @dataclass
+class PageNumberConfig:
+    """Page number configuration.
+
+    Controls whether page numbers are rendered in the footer and the starting
+    page number for the document.
+    """
+
+    enabled: bool = True
+    start_at: int = 1  # Starting page number (Arabic numeral)
+
+
+@dataclass
 class PageConfig:
     """Page layout configuration."""
 
@@ -181,6 +193,7 @@ class PageConfig:
     bottom_margin: float = 2.54
     left_margin: float = 3.18
     right_margin: float = 3.18
+    page_number: PageNumberConfig = field(default_factory=PageNumberConfig)
 
 
 # =============================================================================
@@ -302,6 +315,9 @@ def load_config(path: str | Path) -> AppConfig:
 
     # --- Page ---
     page_data = raw.get("page", {})
+    page_number_data = page_data.pop("page_number", {}) if isinstance(page_data, dict) else {}
     page = _dict_to_dataclass(PageConfig, page_data)
+    if page_number_data:
+        page.page_number = _dict_to_dataclass(PageNumberConfig, page_number_data)
 
     return AppConfig(cover=cover, toc=toc, styles=styles, page=page)

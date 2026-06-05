@@ -48,6 +48,7 @@
 | 🧮 **LaTeX 公式** | 行内 `$...$` 和块级 `$$...$$` 转换为 Word 原生 OMML 公式 |
 | 💻 **代码块** | 带边框的代码框 + 等宽字体，每行独立段落 |
 | 💬 **引用块** | 左侧竖线 + 楷体斜体 |
+| 🔢 **页码** | （可选）页脚居中页码，自定义起始位置（如从第3页开始编"1"），五号 Times New Roman |
 | ⚙️ **自然语言配置** | 用自然语言描述格式需求，让 AI 生成 YAML 配置文件，无需手写 |
 
 ## 📦 安装
@@ -180,10 +181,13 @@ styles:
 # === 页面设置 ===
 page:
   size: "A4"
-  margin_top: 2.54                # cm
-  margin_bottom: 2.54
-  margin_left: 3.18
-  margin_right: 3.18
+  top_margin: 2.54                # cm
+  bottom_margin: 2.54
+  left_margin: 3.18
+  right_margin: 3.18
+  page_number:
+    enabled: true                 # 是否添加页码
+    start_at: 1                   # 从文档第几页开始编页码（1=从首页开始）
 ```
 
 > 完整配置模板见 [md2docx/default_config.yaml](md2docx/default_config.yaml)，或通过 `md2docx -ic` 生成。

@@ -20,6 +20,7 @@ from md2docx.config import (
     AppConfig,
     CodeStyle,
     HeadingStyle,
+    PageNumberConfig,
     StyleConfig,
     TableStyle,
     TextStyle,
@@ -40,6 +41,7 @@ from md2docx.styles import (
     _set_table_border,
     _is_math_run,
     SIZE_SANHAO,
+    SIZE_WUHAO,
 )
 
 
@@ -502,6 +504,129 @@ def _setup_page(doc: Document, config: AppConfig) -> None:
         section.right_margin = Cm(config.page.right_margin)
 
 
+def _setup_page_number(doc: Document, page_number: PageNumberConfig) -> None:
+    """Add page numbers to the footer of content sections.
+
+    Page numbers are centred, use Arabic numerals (五号 Times New Roman), and
+    appear only on sections that should be numbered.
+
+    When *page_number.enabled* is False this is a no-op.
+
+    Semantics of ``start_at``
+    -------------------------
+    ``start_at`` is the **physical page** of the document where Arabic
+    numbering begins (with "1").  Pages before *start_at* carry no page
+    number.  A section break inserted before the body content separates the
+    front-matter section(s) from the numbered content section(s).
+
+    * start_at = 1 → all pages numbered from 1 (single section)
+    * start_at > 1 → first *(start_at - 1)* pages unnumbered;
+      subsequent pages start at "1"
+    """
+    if not page_number.enabled:
+        return
+
+    sections = doc.sections
+    if not sections:
+        return
+
+    # ---- Determine which sections get page numbers ----
+    if page_number.start_at > 1 and len(sections) > 1:
+        # Front-matter section(s) get no footer; numbering starts in
+        # the first content section at 1.
+        numbered_sections = sections[1:]  # skip cover/TOC section
+        restart_at = 1
+    else:
+        # Single section or start_at == 1 — number everything.
+        numbered_sections = list(sections)
+        restart_at = page_number.start_at
+
+    for i, section in enumerate(numbered_sections):
+        footer = section.footer
+        footer.is_linked_to_previous = False
+
+        # --- Start with a clean paragraph (no Footer style) ---
+        for p in list(footer.paragraphs):
+            p._element.getparent().remove(p._element)
+
+        para = footer.add_paragraph()
+        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        para.paragraph_format.space_before = Pt(0)
+        para.paragraph_format.space_after = Pt(0)
+
+        # --- Nuke the "Footer" paragraph style ---
+        pPr = para._element.get_or_add_pPr()
+        for stale in pPr.findall(qn("w:pStyle")):
+            pPr.remove(stale)
+
+        # --- Paragraph-level default run properties (五号) ---
+        _para_rPr = OxmlElement("w:rPr")
+        _rFonts = OxmlElement("w:rFonts")
+        _rFonts.set(qn("w:ascii"), "Times New Roman")
+        _rFonts.set(qn("w:hAnsi"), "Times New Roman")
+        _rFonts.set(qn("w:eastAsia"), "宋体")
+        _rFonts.set(qn("w:cs"), "Times New Roman")
+        _para_rPr.append(_rFonts)
+        _sz = OxmlElement("w:sz")
+        _sz.set(qn("w:val"), "21")  # 10.5 pt = 五号
+        _para_rPr.append(_sz)
+        _szCs = OxmlElement("w:szCs")
+        _szCs.set(qn("w:val"), "21")
+        _para_rPr.append(_szCs)
+        pPr.insert(0, _para_rPr)
+
+        # --- Shared font helper ---
+        def _apply_pn_font(run):
+            set_run_font(
+                run,
+                cn_name="宋体",
+                en_name="Times New Roman",
+                size=SIZE_WUHAO,
+                bold=False,
+                italic=False,
+            )
+
+        # --- Build PAGE field ---
+        run_begin = para.add_run()
+        _apply_pn_font(run_begin)
+        fld_begin = OxmlElement("w:fldChar")
+        fld_begin.set(qn("w:fldCharType"), "begin")
+        run_begin._element.append(fld_begin)
+
+        run_instr = para.add_run()
+        _apply_pn_font(run_instr)
+        instr = OxmlElement("w:instrText")
+        instr.set(qn("xml:space"), "preserve")
+        instr.text = "PAGE"
+        run_instr._element.append(instr)
+
+        run_sep = para.add_run()
+        _apply_pn_font(run_sep)
+        fld_sep = OxmlElement("w:fldChar")
+        fld_sep.set(qn("w:fldCharType"), "separate")
+        run_sep._element.append(fld_sep)
+
+        run_text = para.add_run(str(restart_at))
+        _apply_pn_font(run_text)
+
+        run_end = para.add_run()
+        _apply_pn_font(run_end)
+        fld_end = OxmlElement("w:fldChar")
+        fld_end.set(qn("w:fldCharType"), "end")
+        run_end._element.append(fld_end)
+
+        # --- Restart page numbering for the first numbered section ---
+        if i == 0:
+            sect_pr = section._sectPr
+            if sect_pr is not None:
+                pg_num_type = OxmlElement("w:pgNumType")
+                pg_num_type.set(qn("w:start"), str(restart_at))
+                # Remove any existing pgNumType first
+                for existing in sect_pr.findall(qn("w:pgNumType")):
+                    sect_pr.remove(existing)
+                sect_pr.append(pg_num_type)
+
+
 # =============================================================================
 # Cover page
 # =============================================================================
@@ -649,8 +774,19 @@ def build_docx(
     if config.toc.enabled:
         _build_toc(doc, config)
 
+    # --- Section break before body (when page numbering starts later) ---
+    pn = config.page.page_number
+    if pn.enabled and pn.start_at > 1:
+        doc.add_section()
+        # Re-apply page geometry to the new section (add_section copies from
+        # the previous section, but _setup_page ensures consistency).
+        _setup_page(doc, config)
+
     # --- Content ---
     for block in ast:
         _render_block(doc, block, config.styles, md_path)
+
+    # --- Page number in footer (after all sections exist) ---
+    _setup_page_number(doc, pn)
 
     return doc
