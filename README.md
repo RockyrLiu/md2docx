@@ -41,7 +41,7 @@
 | 📔 **封面** | （可选）可配置的报告标题、姓名、班级学号、指导教师、日期 |
 | 📑 **目录** | （可选）自动插入 Word TOC 域，在 Word 中右键即可更新 |
 | 📐 **多级标题** | H1–H6 映射为 Word 内置标题样式，各级字体/字号/加粗/对齐独立可配 |
-| 📝 **正文排版** | **自定义**，默认中英文双字体（宋体 + Times New Roman）、1.5 倍行距、首行缩进、两端对齐 |
+| 📝 **正文排版** | **自定义**，默认中英文双字体（宋体 + Times New Roman）、单倍行距、首行缩进2字符、两端对齐 |
 | 📊 **学术三线表** | GFM 表格 → 三线表（顶线 1.5pt、表头下线 0.75pt、底线 1.5pt），支持表格内公式 |
 | 🖼️ **图片** | `![alt](path)` 自动居中嵌入，宽高自适应页面 |
 | 📋 **列表** | 有序/无序列表，支持嵌套层级 |
@@ -135,20 +135,21 @@ styles:
     font_name: "宋体"
     font_name_ascii: "Times New Roman"
     font_size: 12                 # 小四
-    line_spacing: 1.5
+    line_spacing: 1.0             # 单倍行距
     first_line_indent: 2          # 首行缩进（字符数）
     alignment: "justify"
 
   headings:                       # 标题（h1–h6 可逐级配置）
     h1:
       font_name: "黑体"
-      font_size: 22               # 二号
+      font_size: 16               # 三号
       bold: true
       alignment: "center"
     h2:
       font_name: "黑体"
-      font_size: 16               # 三号
+      font_size: 14               # 四号
       bold: true
+      alignment: "center"
 
   table:                          # 表格
     font_name: "宋体"
@@ -159,7 +160,8 @@ styles:
   list:                           # 列表
     font_name: "宋体"
     font_size: 12                 # 小四
-    indent: 2                     # 缩进（字符数）
+    indent: 0                     # 列表整体左缩进（字符数）
+    first_line_indent: 2          # 列表项首行缩进（字符数）
 
   code:                           # 代码块
     font_name: "Consolas"
@@ -238,10 +240,10 @@ skill 会自动：理解你的格式需求 → 生成 `config.yaml` → 执行 `
 
 | 字号 | pt | 典型用途 |
 |------|-----|---------|
-| 二号 | 22 | 一级标题 (H1) |
-| 三号 | 16 | 二级标题 (H2) |
-| 四号 | 14 | 三级标题 (H3) |
-| 小四 | 12 | 正文 / 四级标题 |
+| 二号 | 22 | — |
+| 三号 | 16 | 题目 (H1) |
+| 四号 | 14 | 一级标题 (H2) |
+| 小四 | 12 | 正文 / 其余级标题 (H3–H6) |
 | 五号 | 10 | 表格 / 脚注 |
 
 ## 📝 支持的 Markdown 语法

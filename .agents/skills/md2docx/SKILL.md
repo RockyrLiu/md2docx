@@ -73,7 +73,7 @@ styles:
     font_name: "宋体"
     font_name_ascii: "Times New Roman"
     font_size: 12
-    line_spacing: 1.5
+    line_spacing: 1.0
     bold: false
     italic: false
     alignment: "justify"
@@ -86,7 +86,7 @@ styles:
     h1:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
-      font_size: 22
+      font_size: 16
       bold: true
       italic: false
       alignment: "center"
@@ -96,17 +96,17 @@ styles:
     h2:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
-      font_size: 16
+      font_size: 14
       bold: true
       italic: false
-      alignment: "left"
+      alignment: "center"
       space_before: 6
       space_after: 6
       color: "000000"
     h3:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
-      font_size: 14
+      font_size: 12
       bold: true
       italic: false
       alignment: "left"
@@ -157,8 +157,9 @@ styles:
     font_name: "宋体"
     font_name_ascii: "Times New Roman"
     font_size: 12
-    line_spacing: 1.5
-    indent: 2                        # 缩进字符数
+    line_spacing: 1.0
+    indent: 0                          # 列表整体左缩进字符数，0 表示不缩进
+    first_line_indent: 2               # 列表项首行缩进字符数
 
   code:
     font_name: "Consolas"
@@ -174,7 +175,7 @@ styles:
     font_name_ascii: "Times New Roman"
     font_size: 12
     italic: true
-    line_spacing: 1.5
+    line_spacing: 1.0
     left_indent: 0.5
     border_left_color: "999999"
 
@@ -204,13 +205,13 @@ md2docx <输入文件.md> -c config.yaml -o <输出文件.docx>
 
 ### 中文字号 → pt
 
-| 用户描述 | `font_size` 值 |
-|---------|---------------|
-| 二号 | 22 |
-| 三号 | 16 |
-| 四号 | 14 |
-| 小四 | 12 |
-| 五号 | 10 |
+| 用户描述 | `font_size` 值 | 默认用途 |
+|---------|---------------|---------|
+| 二号 | 22 | — |
+| 三号 | 16 | 题目 (H1) |
+| 四号 | 14 | 一级标题 (H2) |
+| 小四 | 12 | 正文 / 二级及其他标题 (H3–H6) |
+| 五号 | 10 | 表格 / 脚注 |
 
 ### 字体
 
@@ -263,7 +264,7 @@ md2docx <输入文件.md> -c config.yaml -o <输出文件.docx>
 
 | 用户说 | 意味着 |
 |--------|--------|
-| 「学术风格」「学术论文」 | 正文宋体12pt, 1.5行距, 首行缩进2, 两端对齐; 标题黑体加粗; 三线表 |
+| 「学术风格」「学术论文」 | 正文宋体12pt, 单倍行距, 首行缩进2, 两端对齐; 标题黑体加粗（h1三号居中，h2四号居中，h3+小四居左）; 三线表 |
 | 「课程报告」「实验报告」 | 含封面, 目录到三级, 学术风格正文 |
 | 「读书笔记」 | 无封面, 无目录, 正文楷体12pt, 1.5行距 |
 
@@ -271,7 +272,7 @@ md2docx <输入文件.md> -c config.yaml -o <输出文件.docx>
 
 ## 示例对话
 
-**用户**：`/md2docx 帮我把 report.md 转成 Word，正文宋体小四1.5倍行距首行缩进，标题黑体二号居中，封面标题"数字电路实验报告"作者张三，目录到二级`
+**用户**：`/md2docx 帮我把 report.md 转成 Word，正文宋体小四单倍行距首行缩进，标题黑体三号居中，封面标题"数字电路实验报告"作者张三，目录到二级`
 
 **你的处理**：
 
@@ -280,8 +281,8 @@ md2docx <输入文件.md> -c config.yaml -o <输出文件.docx>
    - `cover.title: "数字电路实验报告"`
    - `cover.author: "张三"`
    - `toc.level: 2`
-   - `styles.body` 保持默认（宋体12pt, 1.5行距, 首行缩进2, 两端对齐——用户说的就是默认值）
-   - `styles.headings.h1` 保持默认（黑体22pt, 居中, 加粗——用户说的就是默认值）
+   - `styles.body` 保持默认（宋体12pt, 单倍行距, 首行缩进2, 两端对齐——用户说的就是默认值）
+   - `styles.headings.h1` 保持默认（黑体16pt, 居中, 加粗——用户说的就是默认值）
 3. 写入 `config.yaml`
 4. 执行 `md2docx report.md -c config.yaml -o report.docx`
 5. 提醒更新目录域
