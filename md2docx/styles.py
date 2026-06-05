@@ -107,9 +107,9 @@ def set_para_format(
         indent_cm = first_line_indent_chars * font_size_for_indent.pt * 0.0353
         para.paragraph_format.first_line_indent = Cm(indent_cm)
 
-    if space_before_pt:
+    if space_before_pt is not None:
         para.paragraph_format.space_before = Pt(space_before_pt)
-    if space_after_pt:
+    if space_after_pt is not None:
         para.paragraph_format.space_after = Pt(space_after_pt)
 
 
@@ -330,6 +330,8 @@ def setup_normal_style(doc: Document, body_style) -> None:
     
     pf = style.paragraph_format
     pf.line_spacing = getattr(body_style, "line_spacing", 1.5)
+    pf.space_before = Pt(getattr(body_style, "space_before", 0))
+    pf.space_after = Pt(getattr(body_style, "space_after", 0))
     align = getattr(body_style, "alignment", "justify")
     if align in _ALIGN:
         pf.alignment = _ALIGN[align]
