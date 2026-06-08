@@ -51,7 +51,6 @@ def _process_children(mathml_el: Any) -> list[Any]:
     """Convert MathML element children to a list of OMML elements."""
     result: list[Any] = []
     for child in mathml_el:
-        tag = etree.QName(child.tag).localname if isinstance(child.tag, str) else child.tag.split("}")[-1] if "}" in (child.tag or "") else child.tag
         omml = _mathml_to_omml(child)
         if omml is not None:
             if isinstance(omml, list):
@@ -136,6 +135,16 @@ def _handle_fenced_mrow(children: list) -> Any:
     return d
 
 
+def _get_localname(el: Any) -> str:
+    """Safely extract the local tag name from an lxml element."""
+    try:
+        if hasattr(el, "tag") and el.tag:
+            return etree.QName(el.tag).localname
+    except Exception:
+        pass
+    return ""
+
+
 def _mrow_has_fence(children) -> bool:
     """Return True if any child of the mrow is a fence ``<mo>``."""
     for child in children:
@@ -147,6 +156,79 @@ def _mrow_has_fence(children) -> bool:
         if ctag == "mo" and child.get("fence") == "true":
             return True
     return False
+
+
+def _mrow_has_matrix_brackets(children) -> bool:
+    """Detect pattern: ``<mo>bracket</mo> <mtable> … <mo>bracket</mo>``.
+
+    This handles ``\\begin{bmatrix}`` / ``\\begin{pmatrix}`` / etc. where
+    ``latex2mathml`` produces plain ``<mo>`` elements (no ``fence="true"``)
+    around an ``<mtable>``.
+    """
+    for i, child in enumerate(children):
+        if _get_localname(child) == "mtable":
+            if i > 0 and i + 1 < len(children):
+                prev = children[i - 1]
+                nxt = children[i + 1]
+                if (_get_localname(prev) == "mo"
+                        and _get_localname(nxt) == "mo"
+                        and _is_delimiter_char(_extract_text(prev))
+                        and _is_delimiter_char(_extract_text(nxt))):
+                    return True
+    return False
+
+
+def _handle_matrix_mrow(children: list) -> list:
+    """Process an ``<mrow>`` that contains bracket-delimited matrix(es).
+
+    For each ``<mo>b</mo> <mtable> <mo>b</mo>`` sequence, wraps the
+    ``<mtable>`` in an OMML ``m:d`` delimiter with stretchy brackets so
+    that Word renders proper tall matrix brackets instead of plain ``[``/``]``
+    glyphs.
+    """
+    result: list = []
+    i = 0
+    while i < len(children):
+        child = children[i]
+        ctag = _get_localname(child)
+
+        # Detect <mo>open</mo> <mtable> <mo>close</mo>
+        if (ctag == "mo"
+                and i + 2 < len(children)
+                and _get_localname(children[i + 1]) == "mtable"
+                and _get_localname(children[i + 2]) == "mo"):
+            open_ch = _extract_text(child)
+            close_ch = _extract_text(children[i + 2])
+            if (_is_delimiter_char(open_ch)
+                    and _is_delimiter_char(close_ch)):
+                # Build m:d wrapping the matrix
+                d = _math_elt("d")
+                d_pr = _math_elt("dPr")
+                beg = _math_elt("begChr")
+                beg.set(qn("m:val"), open_ch)
+                d_pr.append(beg)
+                end = _math_elt("endChr")
+                end.set(qn("m:val"), close_ch)
+                d_pr.append(end)
+                d.append(d_pr)
+                e = _math_elt("e")
+                mtable_omml = _mathml_to_omml(children[i + 1])
+                _append_children(e, mtable_omml)
+                d.append(e)
+                result.append(d)
+                i += 3
+                continue
+
+        # Regular child — process normally
+        omml = _mathml_to_omml(child)
+        if omml is not None:
+            if isinstance(omml, list):
+                result.extend(omml)
+            else:
+                result.append(omml)
+        i += 1
+
+    return result
 
 
 def _mathml_to_omml(el: Any) -> Any:
@@ -167,11 +249,13 @@ def _mathml_to_omml(el: Any) -> Any:
         # isolated fence mo reaches here it's treated as regular text.
         return _math_run(text)
 
-    # --- mrow: group (with fence detection for cases, \left\{, etc.) ---
+    # --- mrow: group (with fence / matrix-bracket detection) ---
     if tag == "mrow":
         children = list(el)  # type: ignore[arg-type]
         if _mrow_has_fence(children):
             return _handle_fenced_mrow(children)
+        if _mrow_has_matrix_brackets(children):
+            return _handle_matrix_mrow(children)
         return _process_children(el)
 
     # --- mfrac: fraction ---
