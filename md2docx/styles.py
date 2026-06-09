@@ -58,16 +58,31 @@ def set_run_font(
 
         set_run_font(run, cn_name="黑体", size=SIZE_SANHAO, bold=True)
     """
-    # Set ASCII/HAnsi via python-docx API
+    # Set ASCII/HAnsi via python-docx API (hAnsi is overridden below)
     run.font.name = en_name
     run.font.size = size
     run.bold = bold
     run.italic = italic
 
-    # set East-Asian font explicitly
+    # Set font ranges explicitly:
+    #   w:ascii  → en_name (English letters/numbers)
+    #   w:hAnsi  → cn_name (Chinese punctuation: "" '', etc.)
+    #   w:eastAsia → cn_name (CJK characters)
+    #   w:cs     → cn_name (complex script — rare in Chinese docs)
     rpr = run._element.rPr
     rfonts = rpr.find(qn("w:rFonts"))
+    rfonts.set(qn("w:ascii"), en_name)
+    rfonts.set(qn("w:hAnsi"), cn_name)
     rfonts.set(qn("w:eastAsia"), cn_name)
+    rfonts.set(qn("w:cs"), cn_name)
+
+    # Clear theme font references so they don't override our explicit choices
+    for attr in (qn("w:asciiTheme"), qn("w:hAnsiTheme"),
+                 qn("w:eastAsiaTheme"), qn("w:cstheme")):
+        try:
+            del rfonts.attrib[attr]
+        except KeyError:
+            pass
 
     # Color
     if color is not None:
@@ -298,9 +313,9 @@ def _set_style_fonts(style, cn_font: str, en_font: str) -> None:
     rFonts = rpr.find(qn('w:rFonts'))
 
     rFonts.set(qn('w:ascii'), en_font)
-    rFonts.set(qn('w:hAnsi'), en_font)
+    rFonts.set(qn('w:hAnsi'), cn_font)
     rFonts.set(qn('w:eastAsia'), cn_font)
-    rFonts.set(qn('w:cs'), en_font)
+    rFonts.set(qn('w:cs'), cn_font)
 
     # MUST clear theme font references
     for attr in (qn('w:asciiTheme'), qn('w:hAnsiTheme'),
