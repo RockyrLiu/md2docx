@@ -288,14 +288,6 @@ def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
         run = para.add_run()
         run.add_picture(str(img_path), width=width, height=height)
 
-        # Alt text caption
-        if alt:
-            cap_para = doc.add_paragraph()
-            cap_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            cap_run = cap_para.add_run(f"图：{alt}")
-            cap_run.font.size = Pt(10)
-            cap_run.italic = True
-
     except Exception:
         para = doc.add_paragraph()
         run = para.add_run(f"[无法加载图片: {src}]")
@@ -326,10 +318,6 @@ def _render_inline_image(para, src: str, alt: str, md_path: Path) -> None:
                 width = DocxInches(height.inches * aspect)
 
         run = para.add_run()
-        if alt:
-            before = para.add_run(f"[{alt}] ")
-            before.font.size = Pt(9)
-            before.font.italic = True
         run.add_picture(str(img_path), width=width, height=height)
     except Exception:
         run = para.add_run(f"[无法加载图片: {src}]")
