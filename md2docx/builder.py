@@ -762,6 +762,11 @@ def build_docx(
 
     doc = Document()
 
+    # --- 清除 python-docx 默认写入的文档属性 ---
+    doc.core_properties.author = ""
+    doc.core_properties.last_modified_by = ""
+    doc.core_properties.comments = ""
+
     # --- Page setup ---
     _setup_page(doc, config)
 
