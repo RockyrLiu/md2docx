@@ -17,15 +17,58 @@ import mistune
 # Inline / block math regexes
 # ---------------------------------------------------------------------------
 _INLINE_MATH_RE = re.compile(r"(?<!\\)\$((?:[^\$]|\\\$)+?)(?<!\\)\$")
-_DISPLAY_MATH_RE = re.compile(r"(?<!\\)\$\$((?:[^\$]|\\\$)+?)(?<!\\)\$\$", re.DOTALL)  # re.DOTALL allows newlines in display math
+_DISPLAY_MATH_RE = re.compile(r"(?<!\\)\$\$((?:[^\$]|\\\$)+?)(?<!\\)\$\$", re.DOTALL)
 _PH_ANY = re.compile(r"\x00MATH(?:INLINE|BLOCK)\d+\x00")
+
+# Patterns for code regions that must be shielded from math replacement.
+# Fenced code blocks: ``` or ~~~ delimiters, content in between.
+_FENCED_CODE_RE = re.compile(
+    r"(?m)^( {0,3})(```+|~~~+)(\S*)\n(.*?)\n\1\2\s*$",
+    re.DOTALL,
+)
+# Inline code: `...` (backtick pairs).
+_INLINE_CODE_RE = re.compile(r"(?<!\\)(`+)((?:[^`]|\n)+?)(?<!\\)\1")
+
+# Sentinel markers used for temporarily stashing protected code spans.
+# Use codepoints from the Unicode Private Use Area (U+E000–U+F8FF) to
+# avoid collisions with any real document text.
+_CODESPAN_SENTINEL = "CS"
+_FENCE_SENTINEL = "FC"
 
 
 def _escape_math(text: str) -> tuple[str, dict[str, str]]:
     """Temporarily replace math spans with placeholders so mistune won't
-    mangle them.  Returns (processed_text, placeholder_map)."""
+    mangle them.  Returns ``(processed_text, placeholder_map).``
+
+    Fenced code blocks and inline code spans are protected first so that
+    ``$`` characters inside them (e.g. the assembly ``JNB TF0, $`` idiom)
+    are not mistaken for LaTeX math delimiters.
+    """
     placeholders: dict[str, str] = {}
     counter = 0
+
+    # -- 1. Stash fenced code blocks and inline code -----------------------
+    protected: dict[str, str] = {}
+    pc = 0
+
+    def _stash_fence(m: re.Match) -> str:
+        nonlocal pc
+        key = f"{_FENCE_SENTINEL}{pc}"
+        protected[key] = m.group(0)  # preserve the entire block verbatim
+        pc += 1
+        return key
+
+    def _stash_codespan(m: re.Match) -> str:
+        nonlocal pc
+        key = f"{_CODESPAN_SENTINEL}{pc}"
+        protected[key] = m.group(0)  # preserve backticks + content
+        pc += 1
+        return key
+
+    text = _FENCED_CODE_RE.sub(_stash_fence, text)
+    text = _INLINE_CODE_RE.sub(_stash_codespan, text)
+
+    # -- 2. Replace math spans with placeholders ---------------------------
 
     def _replace_display(m: re.Match) -> str:
         nonlocal counter
@@ -43,6 +86,12 @@ def _escape_math(text: str) -> tuple[str, dict[str, str]]:
 
     text = _DISPLAY_MATH_RE.sub(_replace_display, text)
     text = _INLINE_MATH_RE.sub(_replace_inline, text)
+
+    # -- 3. Restore stashed code regions -----------------------------------
+
+    for key, value in protected.items():
+        text = text.replace(key, value)
+
     return text, placeholders
 
 
