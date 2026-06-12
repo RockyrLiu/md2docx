@@ -101,8 +101,12 @@ md2docx -ic example/config.yaml
 # 3. 编辑配置文件（填入你的信息）
 #    用任意编辑器修改 config.yaml 中的封面信息和样式
 
-# 4. 转换
+# 4. 转换（单文件）
 md2docx example/sample.md -c example/config.yaml
+
+# 4. 或批量转换（多文件 / 通配符 / 排除）
+md2docx test/*.md -c test/config.yaml -o test/out/
+md2docx *.md --exclude README.md
 
 # 5. 查看输出
 #    打开 example/sample.docx，在 Word 中右键目录 → 更新域
@@ -111,14 +115,19 @@ md2docx example/sample.md -c example/config.yaml
 ## 📋 基本命令
 
 ```
-md2docx <输入文件> [选项]
+md2docx <输入文件...> [选项]
 ```
 
 | 命令 | 说明 |
 |------|------|
 | `md2docx input.md` | 基本转换，使用当前目录的 `config.yaml`，输出 `input.docx` |
+| `md2docx a.md b.md c.md` | 多文件转换，输出 `a.docx` `b.docx` `c.docx` |
+| `md2docx *.md` | 通配符转换，转换当前目录所有 `.md` 文件 |
 | `md2docx input.md -c my_conf.yaml` | 指定配置文件 |
-| `md2docx input.md -o output.docx` | 指定输出路径 |
+| `md2docx input.md -o output.docx` | 指定输出路径（单文件） |
+| `md2docx *.md -o out/` | 指定输出目录（多文件） |
+| `md2docx *.md --exclude README.md` | 排除特定文件 |
+| `md2docx *.md --exclude "实验*"` | 通配符排除，支持多次使用 `--exclude` |
 | `md2docx input.md -c my_conf.yaml -o output.docx` | 同时指定配置和输出 |
 | `md2docx -ic` | 在当前目录生成默认配置文件模板 `config.yaml` |
 | `md2docx -ic my_conf.yaml` | 生成配置文件模板到指定路径 |

@@ -81,6 +81,11 @@ python scripts/install_skill.py --project .  # 安装到当前项目
 
 ```bash
 md2docx input.md                    # 转换（使用默认 config.yaml）
+md2docx a.md b.md c.md              # 多文件，输出 a.docx b.docx c.docx
+md2docx *.md                        # 通配符，转换当前目录所有 .md
+md2docx *.md -o out/                # 输出到指定目录
+md2docx *.md --exclude README.md    # 排除特定文件
+md2docx *.md --exclude "实验*"      # 通配符排除（可多次使用 --exclude）
 md2docx input.md -c my_conf.yaml    # 自定义配置
 md2docx input.md -o output.docx     # 指定输出路径
 md2docx -v                          # 查看版本号
