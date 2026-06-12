@@ -289,7 +289,9 @@ def main(argv: list[str] | None = None) -> int:
     success_count = 0
     fail_count = 0
 
-    for input_path in input_paths:
+    for i, input_path in enumerate(input_paths):
+        if i > 0:
+            print()
         # Determine output path for this file
         if multi_file:
             if output_dir:
