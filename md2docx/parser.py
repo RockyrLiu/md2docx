@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
+from urllib.parse import unquote
 
 import mistune
 
@@ -174,7 +175,9 @@ def _extract_inline_children(
 
         elif ctype == "image":
             # mistune: attrs.url for src, children[text] for alt
-            src = child.get("attrs", {}).get("url", "")
+            # mistune URL-encodes non-ASCII characters in the path; decode them
+            # so the file system can find the actual file.
+            src = unquote(child.get("attrs", {}).get("url", ""))
             alt = _extract_plain_text(child.get("children", []))
             result.append({"type": "image", "src": src, "alt": alt})
 
@@ -337,7 +340,7 @@ def _block_to_dict(
         raw = block.get("raw", "")
         img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', raw)
         if img_match:
-            return {"type": "image", "src": img_match.group(1), "alt": ""}
+            return {"type": "image", "src": unquote(img_match.group(1)), "alt": ""}
         return None
 
     return None

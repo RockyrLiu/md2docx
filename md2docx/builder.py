@@ -271,6 +271,7 @@ def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
 
     try:
         from PIL import Image
+        import io as _io
 
         with Image.open(img_path) as img:
             # Calculate size to fit within page (max 5.5 inches for A4 with 3.18cm margins)
@@ -283,10 +284,20 @@ def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
                 height = max_height
                 width = DocxInches(height.inches * aspect)
 
+            # Re-encode image through PIL to strip problematic EXIF/metadata
+            # that python-docx's internal JPEG parser cannot handle.
+            image_stream = _io.BytesIO()
+            img_format = img.format or "JPEG"
+            # JPEGs may have transparency info in RGBA mode; convert to RGB
+            if img_format.upper() in ("JPEG", "JPG") and img.mode == "RGBA":
+                img = img.convert("RGB")
+            img.save(image_stream, format=img_format)
+
         para = doc.add_paragraph()
         para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run = para.add_run()
-        run.add_picture(str(img_path), width=width, height=height)
+        image_stream.seek(0)
+        run.add_picture(image_stream, width=width, height=height)
 
     except Exception:
         para = doc.add_paragraph()
@@ -307,6 +318,7 @@ def _render_inline_image(para, src: str, alt: str, md_path: Path) -> None:
 
     try:
         from PIL import Image
+        import io as _io
 
         with Image.open(img_path) as img:
             max_width = DocxInches(2.0)  # Inline images smaller than block
@@ -317,8 +329,16 @@ def _render_inline_image(para, src: str, alt: str, md_path: Path) -> None:
                 height = DocxInches(2.0)
                 width = DocxInches(height.inches * aspect)
 
+            # Re-encode through PIL to strip problematic EXIF/metadata
+            image_stream = _io.BytesIO()
+            img_format = img.format or "JPEG"
+            if img_format.upper() in ("JPEG", "JPG") and img.mode == "RGBA":
+                img = img.convert("RGB")
+            img.save(image_stream, format=img_format)
+
         run = para.add_run()
-        run.add_picture(str(img_path), width=width, height=height)
+        image_stream.seek(0)
+        run.add_picture(image_stream, width=width, height=height)
     except Exception:
         run = para.add_run(f"[无法加载图片: {src}]")
         run.font.italic = True
