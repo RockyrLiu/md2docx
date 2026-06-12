@@ -370,10 +370,19 @@ def _flatten_blocks(
                 if converted is None:
                     pass
                 elif isinstance(converted, dict) and converted.get("type") == "paragraph":
-                    # Standalone image(s) in a paragraph → image blocks
+                    # Standalone image(s) in a paragraph → image blocks.
+                    # Consecutive images on adjacent lines (separated only by
+                    # softbreaks / linebreaks) are also promoted so each image
+                    # gets full-width, vertical-stack rendering instead of
+                    # being squeezed as a narrow inline image.
                     para_children = converted.get("children", [])
-                    if para_children and all(c.get("type") == "image" for c in para_children):
-                        result.extend(para_children)
+                    if para_children and all(
+                        c.get("type") in ("image", "softbreak", "linebreak")
+                        for c in para_children
+                    ):
+                        for c in para_children:
+                            if c.get("type") == "image":
+                                result.append(c)
                     else:
                         result.append(converted)
                 else:
