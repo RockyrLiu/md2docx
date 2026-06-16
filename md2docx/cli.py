@@ -257,8 +257,7 @@ def main(argv: list[str] | None = None) -> int:
     # -- Load config once -------------------------------------------------------
     config_path = args.config
     if not Path(config_path).exists():
-        if config_path != "config.yaml":
-            print(f"{YELLOW}[Warning]{RESET} 配置文件不存在，使用默认配置", file=sys.stderr)
+        print(f"{YELLOW}[Warning]{RESET} 配置文件不存在，使用默认配置", file=sys.stderr)
         config_path = None
 
     try:
