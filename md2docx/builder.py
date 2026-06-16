@@ -19,7 +19,6 @@ from docx.shared import Cm, Pt
 from md2docx.config import (
     AppConfig,
     CodeStyle,
-    HeadingStyle,
     PageNumberConfig,
     StyleConfig,
     TableStyle,
@@ -145,21 +144,6 @@ def _render_paragraph(doc: Document, block: dict[str, Any], styles: StyleConfig,
     for run_data in children:
         _render_inline_run(para, run_data, styles, md_path)
 
-    # Clean up empty paragraphs
-    if not para.text.strip() and not _para_has_content(para):
-        return
-
-
-def _para_has_content(para) -> bool:
-    """Check if paragraph has non-whitespace content or non-text elements."""
-    if para.text.strip():
-        return True
-    # Check for math OMML elements
-    for child in para._element:
-        if child.tag.endswith("}oMath") or child.tag.endswith("}oMathPara"):
-            return True
-    return False
-
 
 def _render_heading(doc: Document, block: dict[str, Any]) -> None:
     """Render a heading block."""
@@ -251,97 +235,86 @@ def _fill_table_row(row, cell_data_list: list, table_style: TableStyle,
                 run.bold = True
 
 
-def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
-    """Render an image block."""
-    src = block.get("src", "")
-    alt = block.get("alt", "")
+def _prepare_image(img_path: Path, max_w: float, max_h: float) -> tuple | None:
+    """Load, re-encode, and size an image for docx insertion.
 
-    # Resolve path relative to markdown file
-    img_path = md_path.parent / src if not Path(src).is_absolute() else Path(src)
-
-    if not img_path.exists():
-        # Add placeholder text
-        para = doc.add_paragraph()
-        run = para.add_run(f"[图片缺失: {src}]")
-        run.font.color.rgb = None  # default
-        run.italic = True
-        return
-
-    from docx.shared import Inches as DocxInches
+    Returns ``(stream, width, height)`` on success, ``None`` on failure.
+    The image is re-encoded through Pillow to strip problematic EXIF/metadata
+    that python-docx's internal JPEG parser cannot handle.
+    """
+    from docx.shared import Inches
 
     try:
         from PIL import Image
         import io as _io
+    except ImportError:
+        return None
 
+    try:
         with Image.open(img_path) as img:
-            # Calculate size to fit within page (max 5.5 inches for A4 with 3.18cm margins)
-            max_width = DocxInches(5.5)
-            max_height = DocxInches(7.0)
+            max_width = Inches(max_w)
+            max_height = Inches(max_h)
             aspect = img.width / img.height
             width = max_width
-            height = DocxInches(width.inches / aspect)
+            height = Inches(width.inches / aspect)
             if height > max_height:
                 height = max_height
-                width = DocxInches(height.inches * aspect)
+                width = Inches(height.inches * aspect)
 
-            # Re-encode image through PIL to strip problematic EXIF/metadata
-            # that python-docx's internal JPEG parser cannot handle.
             image_stream = _io.BytesIO()
             img_format = img.format or "JPEG"
-            # JPEGs may have transparency info in RGBA mode; convert to RGB
             if img_format.upper() in ("JPEG", "JPG") and img.mode == "RGBA":
                 img = img.convert("RGB")
             img.save(image_stream, format=img_format)
+    except (OSError, IOError, ValueError):
+        return None
 
+    image_stream.seek(0)
+    return image_stream, width, height
+
+
+def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
+    """Render an image block (full-width, centred)."""
+    src = block.get("src", "")
+
+    img_path = md_path.parent / src if not Path(src).is_absolute() else Path(src)
+    if not img_path.exists():
         para = doc.add_paragraph()
-        para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = para.add_run()
-        image_stream.seek(0)
-        run.add_picture(image_stream, width=width, height=height)
+        run = para.add_run(f"[图片缺失: {src}]")
+        run.italic = True
+        return
 
-    except Exception:
+    result = _prepare_image(img_path, 5.5, 7.0)
+    if result is None:
         para = doc.add_paragraph()
         run = para.add_run(f"[无法加载图片: {src}]")
         run.italic = True
+        return
+
+    image_stream, width, height = result
+    para = doc.add_paragraph()
+    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = para.add_run()
+    run.add_picture(image_stream, width=width, height=height)
 
 
 def _render_inline_image(para, src: str, alt: str, md_path: Path) -> None:
-    """Render an image inline within a paragraph."""
+    """Render an image inline within a paragraph (smaller max size)."""
     img_path = md_path.parent / src if not Path(src).is_absolute() else Path(src)
-
     if not img_path.exists():
         run = para.add_run(f"[图片缺失: {src}]")
         run.font.italic = True
         return
 
-    from docx.shared import Inches as DocxInches
-
-    try:
-        from PIL import Image
-        import io as _io
-
-        with Image.open(img_path) as img:
-            max_width = DocxInches(2.0)  # Inline images smaller than block
-            aspect = img.width / img.height
-            width = max_width
-            height = DocxInches(width.inches / aspect)
-            if height > DocxInches(2.0):
-                height = DocxInches(2.0)
-                width = DocxInches(height.inches * aspect)
-
-            # Re-encode through PIL to strip problematic EXIF/metadata
-            image_stream = _io.BytesIO()
-            img_format = img.format or "JPEG"
-            if img_format.upper() in ("JPEG", "JPG") and img.mode == "RGBA":
-                img = img.convert("RGB")
-            img.save(image_stream, format=img_format)
-
-        run = para.add_run()
-        image_stream.seek(0)
-        run.add_picture(image_stream, width=width, height=height)
-    except Exception:
+    result = _prepare_image(img_path, 2.0, 2.0)
+    if result is None:
         run = para.add_run(f"[无法加载图片: {src}]")
         run.font.italic = True
+        return
+
+    image_stream, width, height = result
+    run = para.add_run()
+    run.add_picture(image_stream, width=width, height=height)
 
 
 def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path = Path("."), level: int = 0) -> None:
@@ -512,6 +485,18 @@ def _setup_page(doc: Document, config: AppConfig) -> None:
         section.right_margin = Cm(config.page.right_margin)
 
 
+def _apply_page_number_font(run) -> None:
+    """Apply 五号 font (10.5 pt) to a page-number field run."""
+    set_run_font(
+        run,
+        cn_name="宋体",
+        en_name="Times New Roman",
+        size=SIZE_WUHAO,
+        bold=False,
+        italic=False,
+    )
+
+
 def _setup_page_number(doc: Document, page_number: PageNumberConfig) -> None:
     """Add page numbers to the footer of content sections.
 
@@ -583,42 +568,31 @@ def _setup_page_number(doc: Document, page_number: PageNumberConfig) -> None:
         _para_rPr.append(_szCs)
         pPr.insert(0, _para_rPr)
 
-        # --- Shared font helper ---
-        def _apply_pn_font(run):
-            set_run_font(
-                run,
-                cn_name="宋体",
-                en_name="Times New Roman",
-                size=SIZE_WUHAO,
-                bold=False,
-                italic=False,
-            )
-
         # --- Build PAGE field ---
         run_begin = para.add_run()
-        _apply_pn_font(run_begin)
+        _apply_page_number_font(run_begin)
         fld_begin = OxmlElement("w:fldChar")
         fld_begin.set(qn("w:fldCharType"), "begin")
         run_begin._element.append(fld_begin)
 
         run_instr = para.add_run()
-        _apply_pn_font(run_instr)
+        _apply_page_number_font(run_instr)
         instr = OxmlElement("w:instrText")
         instr.set(qn("xml:space"), "preserve")
         instr.text = "PAGE"
         run_instr._element.append(instr)
 
         run_sep = para.add_run()
-        _apply_pn_font(run_sep)
+        _apply_page_number_font(run_sep)
         fld_sep = OxmlElement("w:fldChar")
         fld_sep.set(qn("w:fldCharType"), "separate")
         run_sep._element.append(fld_sep)
 
         run_text = para.add_run(str(restart_at))
-        _apply_pn_font(run_text)
+        _apply_page_number_font(run_text)
 
         run_end = para.add_run()
-        _apply_pn_font(run_end)
+        _apply_page_number_font(run_end)
         fld_end = OxmlElement("w:fldChar")
         fld_end.set(qn("w:fldCharType"), "end")
         run_end._element.append(fld_end)
@@ -642,30 +616,27 @@ def _setup_page_number(doc: Document, page_number: PageNumberConfig) -> None:
 
 def _build_cover(doc: Document, config: AppConfig) -> None:
     cover = config.cover
-    # Vertical spacing from top
-    for _ in range(4):
-        doc.add_paragraph()
 
-    # Report Title
+    # Report Title (with generous top spacing)
     title_p = doc.add_paragraph()
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    title_p.paragraph_format.space_before = Pt(20)
+    title_p.paragraph_format.space_before = Pt(72)
     run = title_p.add_run(cover.title)
-    run.font.name = '黑体'
-    run._element.rPr.rFonts.set(qn('w:eastAsia'), '黑体')
-    run.font.size = Pt(28)
-    run.bold = True
+    set_run_font(run, cn_name='黑体', en_name='Times New Roman',
+                 size=Pt(28), bold=True)
 
-    # Spacing
-    for _ in range(4):
-        doc.add_paragraph()
-
-    # Student info
-    add_cover_line(doc, '姓    名：', f'{cover.author}')
-    add_cover_line(doc, '班    级：', f'{cover.class_info}')
-    add_cover_line(doc, '学    号：', f'{cover.student_id}')
-    add_cover_line(doc, '任课教师：', f'{cover.teacher}')
-    add_cover_line(doc, '实验日期：', f'{cover.date}')
+    # Student info (first line spaced below title)
+    lines = [
+        ('姓    名：', cover.author),
+        ('班    级：', cover.class_info),
+        ('学    号：', cover.student_id),
+        ('任课教师：', cover.teacher),
+        ('实验日期：', cover.date),
+    ]
+    for i, (label, value) in enumerate(lines):
+        p = add_cover_line(doc, label, value)
+        if i == 0:
+            p.paragraph_format.space_before = Pt(54)
 
     doc.add_page_break()
 

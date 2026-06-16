@@ -243,7 +243,7 @@ def _parse_headings(data: dict[str, Any]) -> dict[str, HeadingStyle]:
     for level in ("h1", "h2", "h3", "h4", "h5", "h6"):
         default = HEADING_DEFAULTS[level]
         if level in data:
-            merged = _deep_merge(default.__dict__ if hasattr(default, "__dict__") else {}, data[level])
+            merged = _deep_merge(default.__dict__, data[level])
             result[level] = _dict_to_dataclass(HeadingStyle, merged)
         else:
             result[level] = default
@@ -315,7 +315,7 @@ def load_config(path: str | Path) -> AppConfig:
 
     # --- Page ---
     page_data = raw.get("page", {})
-    page_number_data = page_data.pop("page_number", {}) if isinstance(page_data, dict) else {}
+    page_number_data = page_data.get("page_number", {}) if isinstance(page_data, dict) else {}
     page = _dict_to_dataclass(PageConfig, page_data)
     if page_number_data:
         page.page_number = _dict_to_dataclass(PageNumberConfig, page_number_data)

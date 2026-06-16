@@ -19,8 +19,6 @@ from lxml import etree
 # MathML namespace
 # ---------------------------------------------------------------------------
 MATHML_NS = "http://www.w3.org/1998/Math/MathML"
-OMML_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math"
-WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
 
 def _math_elt(tag: str, **attrs: str) -> Any:
@@ -384,21 +382,23 @@ def _mathml_to_omml(el: Any) -> Any:
     if tag == "munderover":
         children = list(el)  # type: ignore[arg-type]
         if len(children) >= 3:
-            # Use limUpp + limLow combination
+            # Nest limUpp (base + upper) inside limLow (+ lower)
             lim_upp = _math_elt("limUpp")
-            e = _math_elt("e")
-            _append_children(e, _mathml_to_omml(children[0]))
-            lim_upp.append(e)
+            e_upper = _math_elt("e")
+            _append_children(e_upper, _mathml_to_omml(children[0]))
+            lim_upp.append(e_upper)
             lim_up = _math_elt("lim")
             _append_children(lim_up, _mathml_to_omml(children[2]))
             lim_upp.append(lim_up)
 
-            # Wrap limUpp inside limLow for the lower limit
             lim_low = _math_elt("limLow")
-            lim_low.append(lim_upp)  # The e from limUpp becomes the base
-            # Actually this nesting is tricky. Let's use a simpler approach:
-            # Use an nary-like structure or just put both limits on limUpp
-            return lim_upp
+            e_lower = _math_elt("e")
+            e_lower.append(lim_upp)
+            lim_low.append(e_lower)
+            lim_low_lim = _math_elt("lim")
+            _append_children(lim_low_lim, _mathml_to_omml(children[1]))
+            lim_low.append(lim_low_lim)
+            return lim_low
         return None
 
     # --- mfenced: delimiters (parentheses, brackets, etc.) ---

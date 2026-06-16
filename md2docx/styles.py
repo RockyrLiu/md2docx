@@ -133,15 +133,6 @@ def set_para_format(
 # =============================================================================
 
 
-def set_para_shading(para, hex_color: str) -> None:
-    """Set paragraph background color (e.g. for code blocks)."""
-    ppr = para._element.get_or_add_pPr()
-    shd = OxmlElement("w:shd")
-    shd.set(qn("w:val"), "clear")
-    shd.set(qn("w:color"), "auto")
-    shd.set(qn("w:fill"), hex_color)
-    ppr.append(shd)
-
 
 def set_para_left_border(para, hex_color: str = "999999", width_eighths_pt: int = 12) -> None:
     """Add a left border line to a paragraph (e.g. for blockquotes)."""
@@ -200,21 +191,20 @@ def apply_format_to_para(para, style) -> None:
 # =============================================================================
 
 
-def add_cover_line(doc, text, value='__________', font_size=Pt(16), font_name="宋体"):
+def add_cover_line(doc, text, value='__________', font_size=SIZE_SANHAO, font_name="宋体"):
     """Add a line on the cover page."""
     p = doc.add_paragraph()
-    p.alignment =  _ALIGN["center"]
+    p.alignment = _ALIGN["center"]
     p.paragraph_format.space_before = Pt(12)
     p.paragraph_format.space_after = Pt(6)
+
     run_label = p.add_run(text)
-    run_label.font.name = font_name
-    run_label._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
-    run_label.font.size = font_size
-    run_label.bold = True
+    set_run_font(run_label, cn_name=font_name, en_name="Times New Roman",
+                 size=font_size, bold=True)
+
     run_value = p.add_run('  ' + value)
-    run_value.font.name = font_name
-    run_value._element.rPr.rFonts.set(qn('w:eastAsia'), font_name)
-    run_value.font.size = font_size
+    set_run_font(run_value, cn_name=font_name, en_name="Times New Roman",
+                 size=font_size)
     run_value.underline = True
     return p
 
