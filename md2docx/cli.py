@@ -127,8 +127,16 @@ def _convert_one(
     input_path: Path,
     output_path: Path,
     config: AppConfig,
+    *,
+    no_svg_post: bool = False,
 ) -> int:
-    """Convert a single Markdown file to DOCX.  Returns 0 on success, 1 on error."""
+    """Convert a single Markdown file to DOCX.  Returns 0 on success, 1 on error.
+
+    When SVG images are encountered, placeholder text is inserted into the
+    document.  If *no_svg_post* is ``False`` (the default), COM automation
+    is used automatically to replace those placeholders with actual SVG
+    images.
+    """
     try:
         md_text = input_path.read_text(encoding="utf-8")
     except Exception as exc:
@@ -158,6 +166,31 @@ def _convert_one(
         return 1
 
     print(f"{GREEN}[OK]{RESET} 转换完成: {output_path}")
+
+    # --- Automatically post-process SVG placeholders via COM ---
+    if not no_svg_post:
+        svg_count = sum(
+            1 for p in doc.paragraphs if p.text.strip().startswith("[SVG待处理:")
+        )
+        if svg_count > 0:
+            from md2docx.svg_com import process_svg_placeholders, is_com_available
+            if is_com_available():
+                print(f"SVG 后处理: {output_path} (发现 {svg_count} 个 SVG 图片)")
+                replaced, failed = process_svg_placeholders(output_path)
+                if replaced > 0 or failed > 0:
+                    parts = [f"{replaced} 个替换成功"]
+                    if failed:
+                        parts.append(f"{failed} 个失败")
+                    print(f"  SVG: {', '.join(parts)}")
+            else:
+                print(
+                    f"{YELLOW}[提示]{RESET} 发现 {svg_count} 个 SVG 图片，"
+                    f"已插入文本占位符。\n"
+                    f"  安装 pywin32 后可自动替换为矢量图:\n"
+                    f"    pip install pywin32\n"
+                    f"  然后运行: md2docx --svg-post-only \"{output_path}\""
+                )
+
     return 0
 
 
@@ -211,12 +244,49 @@ def main(argv: list[str] | None = None) -> int:
         dest="init_config",
         help="生成默认配置文件模板并退出 (可选指定输出路径，默认: config.yaml)",
     )
+    parser.add_argument(
+        "--no-svg-post",
+        action="store_true",
+        default=False,
+        help="禁用 SVG 自动后处理，保留文本占位符",
+    )
+    parser.add_argument(
+        "--svg-post-only",
+        type=str,
+        default=None,
+        metavar="DOCX",
+        dest="svg_post_only",
+        help="仅对已有的 .docx 文件执行 SVG 后处理，不进行转换",
+    )
 
     args = parser.parse_args(argv)
 
     # --init-config mode: write template and exit (no input file needed)
     if args.init_config is not None:
         return _generate_config(Path(args.init_config))
+
+    # --svg-post-only mode: COM post-process an existing docx and exit
+    if args.svg_post_only is not None:
+        docx_path = Path(args.svg_post_only)
+        if not docx_path.exists():
+            print(
+                f"{RED}[Error]{RESET} 文件不存在: {docx_path}",
+                file=sys.stderr,
+            )
+            return 1
+        from md2docx.svg_com import process_svg_placeholders
+        replaced, failed = process_svg_placeholders(docx_path)
+        if replaced == 0 and failed == 0:
+            print(
+                f"{YELLOW}[Warning]{RESET} 未找到 SVG 占位符或 COM 不可用",
+                file=sys.stderr,
+            )
+            return 1
+        print(
+            f"{GREEN}[OK]{RESET} SVG 后处理完成: "
+            f"{replaced} 个替换成功{f', {failed} 个失败' if failed else ''}"
+        )
+        return 0 if failed == 0 else 1
 
     # Wrap stdout for UTF-8 output (must happen after --init-config check,
     # because wrapping twice in the same process breaks the underlying buffer).
@@ -303,7 +373,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 out = input_path.with_suffix(".docx")
 
-        ret = _convert_one(input_path, out, config)
+        ret = _convert_one(input_path, out, config, no_svg_post=args.no_svg_post)
         if ret == 0:
             success_count += 1
         else:

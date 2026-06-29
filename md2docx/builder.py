@@ -14,7 +14,7 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml.shared import OxmlElement
-from docx.shared import Cm, Pt
+from docx.shared import Cm, Pt, RGBColor
 
 
 from md2docx.config import (
@@ -43,6 +43,7 @@ from md2docx.styles import (
     SIZE_SANHAO,
     SIZE_WUHAO,
 )
+from md2docx.svg_utils import is_svg, parse_svg_dimensions, make_placeholder
 
 
 # =============================================================================
@@ -280,6 +281,52 @@ def _prepare_image(img_path: Path, max_w: float, max_h: float) -> tuple | None:
     return image_stream, width, height
 
 
+def _constrain_dimensions(
+    nat_w: float, nat_h: float, max_w: float, max_h: float
+) -> tuple[float, float]:
+    """Scale *nat_w* × *nat_h* (inches) to fit within *max_w* × *max_h*
+    while preserving aspect ratio."""
+    if nat_h == 0:
+        nat_h = nat_w  # degenerate case — assume square
+    aspect = nat_w / nat_h
+    width = min(nat_w, max_w)
+    height = width / aspect
+    if height > max_h:
+        height = max_h
+        width = height * aspect
+    return width, height
+
+
+def _render_svg_placeholder_block(
+    doc: Document, img_path: Path, max_w: float, max_h: float
+) -> None:
+    """Insert a centred SVG placeholder paragraph for a block-level image."""
+    nat_w, nat_h = parse_svg_dimensions(img_path)
+    w, h = _constrain_dimensions(nat_w, nat_h, max_w, max_h)
+    placeholder = make_placeholder(img_path, w, h)
+
+    para = doc.add_paragraph()
+    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = para.add_run(placeholder)
+    run.font.size = Pt(9)
+    run.font.italic = True
+    run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+
+def _render_svg_placeholder_inline(
+    para, img_path: Path, max_w: float, max_h: float
+) -> None:
+    """Insert an SVG placeholder run into an existing paragraph (inline image)."""
+    nat_w, nat_h = parse_svg_dimensions(img_path)
+    w, h = _constrain_dimensions(nat_w, nat_h, max_w, max_h)
+    placeholder = make_placeholder(img_path, w, h)
+
+    run = para.add_run(placeholder)
+    run.font.size = Pt(9)
+    run.font.italic = True
+    run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+
 def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
     """Render an image block (full-width, centred)."""
     src = block.get("src", "")
@@ -289,6 +336,11 @@ def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
         para = doc.add_paragraph()
         run = para.add_run(f"[图片缺失: {src}]")
         run.italic = True
+        return
+
+    # SVG images: insert placeholder for later COM post-processing
+    if is_svg(img_path):
+        _render_svg_placeholder_block(doc, img_path, 5.5, 7.0)
         return
 
     result = _prepare_image(img_path, 5.5, 7.0)
@@ -311,6 +363,11 @@ def _render_inline_image(para, src: str, alt: str, md_path: Path) -> None:
     if not img_path.exists():
         run = para.add_run(f"[图片缺失: {src}]")
         run.font.italic = True
+        return
+
+    # SVG images: insert placeholder for later COM post-processing
+    if is_svg(img_path):
+        _render_svg_placeholder_inline(para, img_path, 2.0, 2.0)
         return
 
     result = _prepare_image(img_path, 2.0, 2.0)
