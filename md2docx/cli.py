@@ -176,19 +176,22 @@ def _convert_one(
         )
         if svg_count > 0:
             from md2docx.svg_com import process_svg_placeholders, is_com_available
+
             if is_com_available():
                 print(f"SVG 后处理: {output_path}")
                 replaced, failed = process_svg_placeholders(output_path)
                 if replaced > 0 or failed > 0:
-                    print(f"{GREEN}[OK]{RESET} SVG 后处理: {replaced} 个替换成功"
-                          f"{f', {failed} 个失败' if failed else ''}")
+                    print(
+                        f"{GREEN}[OK]{RESET} SVG 后处理: {replaced} 个替换成功"
+                        f"{f', {failed} 个失败' if failed else ''}"
+                    )
             else:
                 print(
                     f"{YELLOW}[提示]{RESET} 发现 {svg_count} 个 SVG 图片，"
                     f"已插入文本占位符。\n"
                     f"  安装 pywin32 后可自动替换为矢量图:\n"
                     f"    pip install pywin32\n"
-                    f"  然后运行: md2docx --svg-post \"{output_path}\""
+                    f'  然后运行: md2docx --svg-post "{output_path}"'
                 )
 
     return 0
@@ -209,17 +212,18 @@ def main(argv: list[str] | None = None) -> int:
         help="输入的 Markdown 文件路径 (支持通配符，如 *.md)",
     )
     parser.add_argument(
-        "-c", "--config",
+        "-c",
+        "--config",
         type=str,
         default="config.yaml",
         help="YAML 配置文件路径 (默认: config.yaml)",
     )
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         type=str,
         default=None,
-        help="输出 .docx 文件/目录路径 "
-             "(单文件: 指定输出文件; 多文件: 指定输出目录)",
+        help="输出 .docx 文件/目录路径 (单文件: 指定输出文件; 多文件: 指定输出目录)",
     )
     parser.add_argument(
         "--exclude",
@@ -230,13 +234,15 @@ def main(argv: list[str] | None = None) -> int:
         help="排除指定的 Markdown 文件，支持通配符 (可重复使用)",
     )
     parser.add_argument(
-        "-v", "--version",
+        "-v",
+        "--version",
         action="version",
         version=f"md2docx {version('md2docx')}",
         help="显示版本号并退出",
     )
     parser.add_argument(
-        "-ic", "--init-config",
+        "-ic",
+        "--init-config",
         nargs="?",
         const="config.yaml",
         default=None,
@@ -275,6 +281,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 1
         from md2docx.svg_com import process_svg_placeholders
+
         print(f"SVG 后处理: {docx_path}")
         replaced, failed = process_svg_placeholders(docx_path)
         if replaced == 0 and failed == 0:
@@ -283,15 +290,19 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 1
-        print(f"{GREEN}[OK]{RESET} SVG 后处理: {replaced} 个替换成功"
-              f"{f', {failed} 个失败' if failed else ''}")
+        print(
+            f"{GREEN}[OK]{RESET} SVG 后处理: {replaced} 个替换成功"
+            f"{f', {failed} 个失败' if failed else ''}"
+        )
         return 0 if failed == 0 else 1
 
     # Wrap stdout for UTF-8 output (must happen after --init-config check,
     # because wrapping twice in the same process breaks the underlying buffer).
     try:
         sys.stdout = io.TextIOWrapper(
-            sys.stdout.buffer, encoding="utf-8", errors="replace",
+            sys.stdout.buffer,
+            encoding="utf-8",
+            errors="replace",
             line_buffering=True,
         )
     except Exception:
@@ -300,7 +311,10 @@ def main(argv: list[str] | None = None) -> int:
     # Normal conversion mode: input file(s) required
     if not args.input:
         parser.print_help()
-        print(f"\n{YELLOW}[Hint]{RESET} 使用 --init-config 生成默认配置文件模板", file=sys.stderr)
+        print(
+            f"\n{YELLOW}[Hint]{RESET} 使用 --init-config 生成默认配置文件模板",
+            file=sys.stderr,
+        )
         return 1
 
     # -- Expand inputs (glob + exclude) -----------------------------------------

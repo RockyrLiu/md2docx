@@ -43,7 +43,8 @@
 | 📐 **多级标题** | H1–H6 映射为 Word 内置标题样式，各级字体/字号/加粗/对齐独立可配 |
 | 📝 **正文排版** | **自定义**，默认中英文双字体（宋体 + Times New Roman）、单倍行距、首行缩进2字符、两端对齐 |
 | 📊 **学术三线表** | GFM 表格 → 三线表（顶线 1.5pt、表头下线 0.75pt、底线 1.5pt），支持表格内公式 |
-| 🖼️ **图片** | `![alt](path)` 自动居中嵌入，宽高自适应页面 |
+| 🖼️ **图片** | `![alt](path)` 自动居中嵌入，支持 PNG/JPEG/GIF 等光栅格式 |
+| 🎯 **SVG 矢量图** | 自动检测 SVG → 通过 Word COM 一键替换为矢量图（需 Windows + Word 2016+） |
 | 📋 **列表** | 有序/无序列表，支持嵌套层级 |
 | 🧮 **LaTeX 公式** | 行内 `$...$` 和块级 `$$...$$` 转换为 Word 原生 OMML 公式 |
 | 💻 **代码块** | 带边框的代码框 + 等宽字体，每行独立段落 |
@@ -56,6 +57,7 @@
 ### 环境要求
 
 - **Python** ≥ 3.10（唯一硬性要求）
+- **Windows + Word 2016+** — SVG 矢量图自动插入需要；其他功能跨平台
 - 以下包管理器**任选其一**：pip / uv
 
 ### 方式一：让 Agent 自动安装
@@ -131,6 +133,8 @@ md2docx <输入文件...> [选项]
 | `md2docx input.md -c my_conf.yaml -o output.docx` | 同时指定配置和输出 |
 | `md2docx -ic` | 在当前目录生成默认配置文件模板 `config.yaml` |
 | `md2docx -ic my_conf.yaml` | 生成配置文件模板到指定路径 |
+| `md2docx --svg-post output.docx` | 对已有的 docx 执行 SVG 后处理 |
+| `md2docx input.md --no-svg-post` | 禁用 SVG 自动后处理，保留文本占位符 |
 | `md2docx -v` | 显示版本号 |
 | `md2docx -h` | 显示帮助信息 |
 
@@ -286,7 +290,7 @@ skill 会自动：理解你的格式需求 → 生成 `config.yaml` → 执行 `
 | 粗体 | `**text**` | 加粗 |
 | 斜体 | `*text*` | 斜体 |
 | 行内代码 | `` `code` `` | Consolas 等宽 |
-| 图片 | `![alt](path)` | 居中嵌入（相对路径相对于 .md 文件） |
+| 图片 | `![alt](path)` | 居中嵌入（PNG/JPEG/GIF 等）；SVG 矢量图自动通过 Word COM 插入 |
 | 无序列表 | `- item` | 缩进 + 项目符号 |
 | 有序列表 | `1. item` | 缩进 + 数字编号 |
 | 表格 | GFM 表格 | 学术三线表 |
@@ -304,8 +308,9 @@ skill 会自动：理解你的格式需求 → 生成 `config.yaml` → 执行 `
 | [mistune](https://mistune.lepture.com/) | Markdown 解析为 AST |
 | [latex2mathml](https://pypi.org/project/late2mathml/) | LaTeX → MathML 转换 |
 | [lxml](https://lxml.de/) | OMML XML 构建与注入 |
-| [Pillow](https://python-pillow.org/) | 图片尺寸读取 |
+| [Pillow](https://python-pillow.org/) | 光栅图片尺寸读取与重新编码 |
 | [PyYAML](https://pyyaml.org/) | YAML 配置文件解析 |
+| [pywin32](https://github.com/mhammond/pywin32) | Windows COM 自动化（SVG 矢量图插入），仅 Windows |
 
 ## 📁 项目结构
 
@@ -332,7 +337,9 @@ md2docx/
 │   ├── parser.py                # Markdown → AST
 │   ├── styles.py                # Word 样式管理器
 │   ├── math_handler.py          # LaTeX → OMML
-│   └── builder.py               # 文档构建器（核心编排逻辑）
+│   ├── builder.py               # 文档构建器（核心编排逻辑）
+│   ├── svg_utils.py             # SVG 尺寸解析 & 占位符生成
+│   └── svg_com.py               # COM 自动化（SVG → Word）
 ├── scripts/                     # 辅助脚本
 │   └── install_skill.py         # Skill 安装脚本
 ├── .agents/                     # Agent skill 定义

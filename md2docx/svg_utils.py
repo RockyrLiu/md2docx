@@ -15,7 +15,7 @@ from lxml import etree
 # Constants
 # ---------------------------------------------------------------------------
 
-SVG_DEFAULT_WIDTH_IN = 3.0   # inches
+SVG_DEFAULT_WIDTH_IN = 3.0  # inches
 SVG_DEFAULT_HEIGHT_IN = 3.0  # inches
 SVG_DPI = 96.0
 
@@ -35,8 +35,8 @@ _UNIT_TO_INCHES: dict[str, float] = {
     "pc": 12.0 / 72.0,
     "mm": 1.0 / 25.4,
     "cm": 1.0 / 2.54,
-    "em": 16.0 / 96.0,   # approximate — depends on font context
-    "ex": 8.0 / 96.0,    # approximate
+    "em": 16.0 / 96.0,  # approximate — depends on font context
+    "ex": 8.0 / 96.0,  # approximate
 }
 
 # Regex for parsing an SVG length: number + optional unit
@@ -46,6 +46,7 @@ _UNIT_RE = re.compile(r"^\s*([\d.]+)\s*(px|pt|pc|mm|cm|in|em|ex|%)\s*$", re.IGNO
 # ---------------------------------------------------------------------------
 # Public helpers
 # ---------------------------------------------------------------------------
+
 
 def is_svg(path: str | Path) -> bool:
     """Return True if *path* has a ``.svg`` extension (case-insensitive)."""
@@ -148,6 +149,7 @@ def parse_placeholder(text: str) -> tuple[str, float, float] | None:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _parse_svg_unit(value_str: str) -> float | None:
     """Convert an SVG length string (``"100px"``, ``"5cm"``, ``"2in"``) to

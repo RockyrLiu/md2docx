@@ -69,11 +69,20 @@ def _is_delimiter_char(ch: str) -> bool:
     ``\right.`` produces ``.`` which maps to no delimiter — we exclude it here.
     """
     return ch in {
-        "{", "}", "(", ")", "[", "]", "|",
-        "‖",                           # ‖ double vertical line
-        "⟨", "⟩",                 # ⟨ ⟩
-        "⌈", "⌉",                 # ⌈ ⌉
-        "⌊", "⌋",                 # ⌊ ⌋
+        "{",
+        "}",
+        "(",
+        ")",
+        "[",
+        "]",
+        "|",
+        "‖",  # ‖ double vertical line
+        "⟨",
+        "⟩",  # ⟨ ⟩
+        "⌈",
+        "⌉",  # ⌈ ⌉
+        "⌊",
+        "⌋",  # ⌊ ⌋
     }
 
 
@@ -89,14 +98,10 @@ def _handle_fenced_mrow(children: list) -> Any:
 
     for child in children:
         try:
-            ctag = (etree.QName(child.tag).localname
-                    if hasattr(child, "tag") else "")
+            ctag = etree.QName(child.tag).localname if hasattr(child, "tag") else ""
         except Exception:
             ctag = ""
-        is_fence = (
-            ctag == "mo"
-            and child.get("fence") == "true"
-        )
+        is_fence = ctag == "mo" and child.get("fence") == "true"
         if is_fence and _is_delimiter_char((child.text or "").strip()):
             ch = (child.text or "").strip()
             form = child.get("form", "")
@@ -147,8 +152,7 @@ def _mrow_has_fence(children) -> bool:
     """Return True if any child of the mrow is a fence ``<mo>``."""
     for child in children:
         try:
-            ctag = (etree.QName(child.tag).localname
-                    if hasattr(child, "tag") else "")
+            ctag = etree.QName(child.tag).localname if hasattr(child, "tag") else ""
         except Exception:
             ctag = ""
         if ctag == "mo" and child.get("fence") == "true":
@@ -168,10 +172,12 @@ def _mrow_has_matrix_brackets(children) -> bool:
             if i > 0 and i + 1 < len(children):
                 prev = children[i - 1]
                 nxt = children[i + 1]
-                if (_get_localname(prev) == "mo"
-                        and _get_localname(nxt) == "mo"
-                        and _is_delimiter_char(_extract_text(prev))
-                        and _is_delimiter_char(_extract_text(nxt))):
+                if (
+                    _get_localname(prev) == "mo"
+                    and _get_localname(nxt) == "mo"
+                    and _is_delimiter_char(_extract_text(prev))
+                    and _is_delimiter_char(_extract_text(nxt))
+                ):
                     return True
     return False
 
@@ -191,14 +197,15 @@ def _handle_matrix_mrow(children: list) -> list:
         ctag = _get_localname(child)
 
         # Detect <mo>open</mo> <mtable> <mo>close</mo>
-        if (ctag == "mo"
-                and i + 2 < len(children)
-                and _get_localname(children[i + 1]) == "mtable"
-                and _get_localname(children[i + 2]) == "mo"):
+        if (
+            ctag == "mo"
+            and i + 2 < len(children)
+            and _get_localname(children[i + 1]) == "mtable"
+            and _get_localname(children[i + 2]) == "mo"
+        ):
             open_ch = _extract_text(child)
             close_ch = _extract_text(children[i + 2])
-            if (_is_delimiter_char(open_ch)
-                    and _is_delimiter_char(close_ch)):
+            if _is_delimiter_char(open_ch) and _is_delimiter_char(close_ch):
                 # Build m:d wrapping the matrix
                 d = _math_elt("d")
                 d_pr = _math_elt("dPr")
@@ -491,7 +498,7 @@ def latex_to_omml(latex: str) -> Any | None:
         #   \\[6pt]  → \\
         #   \\*[10pt] → \\*
         # latex2mathml doesn't handle these and renders "[]" as literal text.
-        latex = re.sub(r'(\\\\\*?)\[[^\]]*\]', r'\1', latex)
+        latex = re.sub(r"(\\\\\*?)\[[^\]]*\]", r"\1", latex)
 
         # Convert LaTeX to MathML string
         mathml_str = latex2mathml_convert(latex)
@@ -532,7 +539,7 @@ def add_display_math(para, latex: str) -> bool:
     """
     omml = latex_to_omml(latex)
     if omml is None:
-        run = para.add_run(f"$$ {latex} $$")
+        para.add_run(f"$$ {latex} $$")
         return False
 
     omath_para = OxmlElement("m:oMathPara")
@@ -549,7 +556,7 @@ def add_inline_math(para, latex: str) -> bool:
     """
     omml = latex_to_omml(latex)
     if omml is None:
-        run = para.add_run(f" ${latex}$ ")
+        para.add_run(f" ${latex}$ ")
         return False
 
     # Create a proper run via python-docx, then replace its content with OMML.

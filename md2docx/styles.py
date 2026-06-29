@@ -15,18 +15,18 @@ from docx.shared import Cm, Pt, RGBColor
 # =============================================================================
 # Chinese font size constants (中文字号 → pt)
 # =============================================================================
-SIZE_CHUHAO = Pt(42)       # 初号
-SIZE_XIAOCHU = Pt(36)      # 小初
-SIZE_YIHAO = Pt(26)        # 一号
-SIZE_XIAOYI = Pt(24)       # 小一
-SIZE_ERHAO = Pt(22)        # 二号
-SIZE_XIAOER = Pt(18)       # 小二
-SIZE_SANHAO = Pt(16)       # 三号
-SIZE_XIAOSAN = Pt(15)      # 小三
-SIZE_SIHAO = Pt(14)        # 四号
-SIZE_XIAOSI = Pt(12)       # 小四（正文）
-SIZE_WUHAO = Pt(10.5)      # 五号（表格/脚注）
-SIZE_XIAOWU = Pt(9)        # 小五
+SIZE_CHUHAO = Pt(42)  # 初号
+SIZE_XIAOCHU = Pt(36)  # 小初
+SIZE_YIHAO = Pt(26)  # 一号
+SIZE_XIAOYI = Pt(24)  # 小一
+SIZE_ERHAO = Pt(22)  # 二号
+SIZE_XIAOER = Pt(18)  # 小二
+SIZE_SANHAO = Pt(16)  # 三号
+SIZE_XIAOSAN = Pt(15)  # 小三
+SIZE_SIHAO = Pt(14)  # 四号
+SIZE_XIAOSI = Pt(12)  # 小四（正文）
+SIZE_WUHAO = Pt(10.5)  # 五号（表格/脚注）
+SIZE_XIAOWU = Pt(9)  # 小五
 
 # =============================================================================
 # Alignment map
@@ -77,8 +77,12 @@ def set_run_font(
     rfonts.set(qn("w:cs"), cn_name)
 
     # Clear theme font references so they don't override our explicit choices
-    for attr in (qn("w:asciiTheme"), qn("w:hAnsiTheme"),
-                 qn("w:eastAsiaTheme"), qn("w:cstheme")):
+    for attr in (
+        qn("w:asciiTheme"),
+        qn("w:hAnsiTheme"),
+        qn("w:eastAsiaTheme"),
+        qn("w:cstheme"),
+    ):
         try:
             del rfonts.attrib[attr]
         except KeyError:
@@ -133,8 +137,9 @@ def set_para_format(
 # =============================================================================
 
 
-
-def set_para_left_border(para, hex_color: str = "999999", width_eighths_pt: int = 12) -> None:
+def set_para_left_border(
+    para, hex_color: str = "999999", width_eighths_pt: int = 12
+) -> None:
     """Add a left border line to a paragraph (e.g. for blockquotes)."""
     ppr = para._element.get_or_add_pPr()
     p_bdr = OxmlElement("w:pBdr")
@@ -191,7 +196,9 @@ def apply_format_to_para(para, style) -> None:
 # =============================================================================
 
 
-def add_cover_line(doc, text, value='__________', font_size=SIZE_SANHAO, font_name="宋体"):
+def add_cover_line(
+    doc, text, value="__________", font_size=SIZE_SANHAO, font_name="宋体"
+):
     """Add a line on the cover page."""
     p = doc.add_paragraph()
     p.alignment = _ALIGN["center"]
@@ -199,12 +206,18 @@ def add_cover_line(doc, text, value='__________', font_size=SIZE_SANHAO, font_na
     p.paragraph_format.space_after = Pt(6)
 
     run_label = p.add_run(text)
-    set_run_font(run_label, cn_name=font_name, en_name="Times New Roman",
-                 size=font_size, bold=True)
+    set_run_font(
+        run_label,
+        cn_name=font_name,
+        en_name="Times New Roman",
+        size=font_size,
+        bold=True,
+    )
 
-    run_value = p.add_run('  ' + value)
-    set_run_font(run_value, cn_name=font_name, en_name="Times New Roman",
-                 size=font_size)
+    run_value = p.add_run("  " + value)
+    set_run_font(
+        run_value, cn_name=font_name, en_name="Times New Roman", size=font_size
+    )
     run_value.underline = True
     return p
 
@@ -235,8 +248,13 @@ def insert_toc_field(doc: Document, levels: int = 3) -> None:
     run3._element.append(fld_sep)
 
     hint = para.add_run("（请在 Word 中右键此处 → 更新域，以生成目录）")
-    set_run_font(hint, cn_name="宋体", size=SIZE_XIAOSI, italic=True,
-                 color=RGBColor(128, 128, 128))
+    set_run_font(
+        hint,
+        cn_name="宋体",
+        size=SIZE_XIAOSI,
+        italic=True,
+        color=RGBColor(128, 128, 128),
+    )
 
     run4 = para.add_run()
     fld_end = OxmlElement("w:fldChar")
@@ -300,16 +318,20 @@ def _set_style_fonts(style, cn_font: str, en_font: str) -> None:
     style.font.name = cn_font
 
     rpr = style.element.rPr
-    rFonts = rpr.find(qn('w:rFonts'))
+    rFonts = rpr.find(qn("w:rFonts"))
 
-    rFonts.set(qn('w:ascii'), en_font)
-    rFonts.set(qn('w:hAnsi'), cn_font)
-    rFonts.set(qn('w:eastAsia'), cn_font)
-    rFonts.set(qn('w:cs'), cn_font)
+    rFonts.set(qn("w:ascii"), en_font)
+    rFonts.set(qn("w:hAnsi"), cn_font)
+    rFonts.set(qn("w:eastAsia"), cn_font)
+    rFonts.set(qn("w:cs"), cn_font)
 
     # MUST clear theme font references
-    for attr in (qn('w:asciiTheme'), qn('w:hAnsiTheme'),
-                 qn('w:eastAsiaTheme'), qn('w:cstheme')):
+    for attr in (
+        qn("w:asciiTheme"),
+        qn("w:hAnsiTheme"),
+        qn("w:eastAsiaTheme"),
+        qn("w:cstheme"),
+    ):
         try:
             del rFonts.attrib[attr]
         except KeyError:
@@ -319,10 +341,10 @@ def _set_style_fonts(style, cn_font: str, en_font: str) -> None:
 def setup_normal_style(doc: Document, body_style) -> None:
     """Override the Normal style with configured body font."""
     style = doc.styles["Normal"]
-    
+
     cn_font = getattr(body_style, "font_name", "宋体")
     en_font = getattr(body_style, "font_name_ascii", "Times New Roman")
-    
+
     _set_style_fonts(style, cn_font, en_font)
     style.font.size = Pt(getattr(body_style, "font_size", 12))
     style.font.bold = getattr(body_style, "bold", False)
@@ -332,7 +354,7 @@ def setup_normal_style(doc: Document, body_style) -> None:
         style.font.color.rgb = RGBColor.from_string(color_value)
     else:
         style.font.color.rgb = RGBColor(0, 0, 0)  # Default to black if color is None
-    
+
     pf = style.paragraph_format
     pf.line_spacing = getattr(body_style, "line_spacing", 1.0)
     pf.space_before = Pt(getattr(body_style, "space_before", 0))
@@ -360,7 +382,10 @@ def setup_heading_styles(doc: Document, heading_config: dict) -> None:
 
     swe_part = None
     for rel in doc.part.rels.values():
-        if rel.reltype == "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects":
+        if (
+            rel.reltype
+            == "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects"
+        ):
             swe_part = rel.target_part
             break  # there is at most one
 
@@ -406,42 +431,44 @@ def setup_heading_styles(doc: Document, heading_config: dict) -> None:
         is_italic = getattr(hs, "italic", False)
 
         for styles_elem in style_elements[1:]:  # skip the primary (already done)
-            for style_elem in styles_elem.findall(f"w:style", {"w": w_ns}):
+            for style_elem in styles_elem.findall("w:style", {"w": w_ns}):
                 sid = style_elem.get(f"{{{w_ns}}}styleId")
                 if sid != style_name.replace(" ", ""):
                     continue
-                rPr = style_elem.find(f"w:rPr", {"w": w_ns})
+                rPr = style_elem.find("w:rPr", {"w": w_ns})
                 if rPr is None:
                     rPr = etree.SubElement(style_elem, f"{{{w_ns}}}rPr")
                     style_elem.insert(0, rPr)
 
                 # w:b — bold
-                b = rPr.find(f"w:b", {"w": w_ns})
+                b = rPr.find("w:b", {"w": w_ns})
                 if b is None:
                     b = etree.SubElement(rPr, f"{{{w_ns}}}b")
                 b.set(f"{{{w_ns}}}val", "0" if not is_bold else "1")
 
                 # w:bCs — complex-script bold (defaults to true!)
-                bCs = rPr.find(f"w:bCs", {"w": w_ns})
+                bCs = rPr.find("w:bCs", {"w": w_ns})
                 if bCs is None:
                     bCs = etree.SubElement(rPr, f"{{{w_ns}}}bCs")
                 bCs.set(f"{{{w_ns}}}val", "0" if not is_bold else "1")
 
                 # w:i — italic
-                i_elem = rPr.find(f"w:i", {"w": w_ns})
+                i_elem = rPr.find("w:i", {"w": w_ns})
                 if i_elem is None:
                     i_elem = etree.SubElement(rPr, f"{{{w_ns}}}i")
                 i_elem.set(f"{{{w_ns}}}val", "1" if is_italic else "0")
 
                 # w:iCs — complex-script italic
-                iCs = rPr.find(f"w:iCs", {"w": w_ns})
+                iCs = rPr.find("w:iCs", {"w": w_ns})
                 if iCs is None:
                     iCs = etree.SubElement(rPr, f"{{{w_ns}}}iCs")
                 iCs.set(f"{{{w_ns}}}val", "1" if is_italic else "0")
 
     # ---- Write modified stylesWithEffects back to the part ----
     if swe_part is not None and len(style_elements) > 1:
-        swe_part._blob = etree.tostring(style_elements[1], xml_declaration=True, encoding="UTF-8", standalone=True)
+        swe_part._blob = etree.tostring(
+            style_elements[1], xml_declaration=True, encoding="UTF-8", standalone=True
+        )
 
 
 # =============================================================================
@@ -479,12 +506,12 @@ def make_three_line_table(table, header_rows: int = 1) -> None:
         tbl_pr.remove(existing_style)
 
     # ---- 2. Set table-level borders ----
-    _set_table_border(table, "top", 12)          # 1.5 pt
-    _set_table_border(table, "bottom", 12)       # 1.5 pt
-    _set_table_border(table, "left", 0, "auto")         # no left
-    _set_table_border(table, "right", 0, "auto")        # no right
-    _set_table_border(table, "insideH", 0, "auto")      # no interior horizontal
-    _set_table_border(table, "insideV", 0, "auto")      # no interior vertical
+    _set_table_border(table, "top", 12)  # 1.5 pt
+    _set_table_border(table, "bottom", 12)  # 1.5 pt
+    _set_table_border(table, "left", 0, "auto")  # no left
+    _set_table_border(table, "right", 0, "auto")  # no right
+    _set_table_border(table, "insideH", 0, "auto")  # no interior horizontal
+    _set_table_border(table, "insideV", 0, "auto")  # no interior vertical
 
     # ---- 3. Cell-level: underline below header row(s) ----
     for i in range(header_rows):
@@ -512,12 +539,16 @@ def format_table_content(table, table_style, header_rows: int = 1) -> None:
                     getattr(table_style, "alignment", "center"),
                     WD_ALIGN_PARAGRAPH.CENTER,
                 )
-                para.paragraph_format.line_spacing = getattr(table_style, "line_spacing", 1.0)
+                para.paragraph_format.line_spacing = getattr(
+                    table_style, "line_spacing", 1.0
+                )
                 for run in para.runs:
                     if _is_math_run(run):
                         continue
                     apply_font_to_run(run, table_style)
-                    if row_idx < header_rows and getattr(table_style, "header_bold", True):
+                    if row_idx < header_rows and getattr(
+                        table_style, "header_bold", True
+                    ):
                         run.bold = True
 
 
@@ -590,5 +621,3 @@ def _set_table_border(table, position: str, sz: int, color: str = "000000") -> N
     if existing is not None:
         borders.remove(existing)
     borders.append(elem)
-
-

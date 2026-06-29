@@ -108,9 +108,7 @@ def resolve_agent_names(
         return dict(AGENT_DEFINITIONS)
 
     # Build a case-insensitive lookup
-    name_lower_map: dict[str, str] = {
-        k.lower(): k for k in AGENT_DEFINITIONS
-    }
+    name_lower_map: dict[str, str] = {k.lower(): k for k in AGENT_DEFINITIONS}
 
     resolved: dict[str, dict] = {}
     for name in names:
@@ -120,6 +118,7 @@ def resolve_agent_names(
         else:
             # Fuzzy suggestion: find closest match
             import difflib
+
             close = difflib.get_close_matches(
                 name.lower(), list(name_lower_map), n=1, cutoff=0.4
             )
@@ -243,9 +242,7 @@ def install_skills(
                 action, target = install_skill_to_target(
                     skill_dir, base_dir, dry_run=dry_run
                 )
-                total_results.append(
-                    (action, skill_dir.name, "(project)", target)
-                )
+                total_results.append((action, skill_dir.name, "(project)", target))
 
     if dry_run:
         print("[DRY RUN] The following would be performed:\n")
@@ -339,7 +336,7 @@ Examples:
         default=None,
         metavar="NAME",
         help="Install only for specific agent(s). Use names from --list. "
-        "Example: --agent \"Claude Code\" \"OpenAI Codex\"",
+        'Example: --agent "Claude Code" "OpenAI Codex"',
     )
 
     args = parser.parse_args()
@@ -366,9 +363,7 @@ Examples:
         )
     elif args.all:
         agent_targets = detect_home_agents(home, agent_filter=agent_filter)
-        project_targets = detect_project_agents(
-            Path.cwd(), agent_filter=agent_filter
-        )
+        project_targets = detect_project_agents(Path.cwd(), agent_filter=agent_filter)
     else:
         agent_targets = detect_home_agents(home, agent_filter=agent_filter)
 

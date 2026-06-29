@@ -98,7 +98,7 @@ def _escape_math(text: str) -> tuple[str, dict[str, str]]:
 
 def _restore_text(text: str, placeholders: dict[str, str]) -> str:
     """
-    The inverse operation of _escape_math. 
+    The inverse operation of _escape_math.
     Restore math placeholders in a text string, returning the raw math.
     """
     for key, value in placeholders.items():
@@ -111,7 +111,9 @@ def _restore_text(text: str, placeholders: dict[str, str]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _split_by_placeholders(text: str, placeholders: dict[str, str]) -> list[dict[str, Any]]:
+def _split_by_placeholders(
+    text: str, placeholders: dict[str, str]
+) -> list[dict[str, Any]]:
     """Split text on math placeholder markers, producing text + inline_math runs."""
     runs: list[dict[str, Any]] = []
     parts = _PH_ANY.split(text)  # split on placeholders, keeping text parts
@@ -123,7 +125,9 @@ def _split_by_placeholders(text: str, placeholders: dict[str, str]) -> list[dict
             runs.append({"type": "text", "text": part})
         if i < len(markers):
             marker = markers[i]
-            math_content = placeholders.get(marker, marker)  # Mapping failed, display the placeholder itself
+            math_content = placeholders.get(
+                marker, marker
+            )  # Mapping failed, display the placeholder itself
             runs.append({"type": "inline_math", "text": math_content})
     return runs
 
@@ -167,11 +171,13 @@ def _extract_inline_children(
 
         elif ctype == "link":
             inner = _extract_inline_children(child.get("children", []), placeholders)
-            result.append({
-                "type": "link",
-                "url": child.get("link", ""),
-                "children": inner,
-            })
+            result.append(
+                {
+                    "type": "link",
+                    "url": child.get("link", ""),
+                    "children": inner,
+                }
+            )
 
         elif ctype == "image":
             # mistune: attrs.url for src, children[text] for alt
@@ -274,7 +280,9 @@ def _block_to_dict(
             if stype == "table_head":
                 # table_head children are table_cell directly (no table_row)
                 for cell in section.get("children", []):
-                    runs = _extract_inline_children(cell.get("children", []), placeholders)
+                    runs = _extract_inline_children(
+                        cell.get("children", []), placeholders
+                    )
                     # If all runs are plain text, flatten to a single string for
                     # backward compatibility with simpler downstream code.
                     if runs and all(r.get("type") == "text" for r in runs):
@@ -286,7 +294,9 @@ def _block_to_dict(
                 for row in section.get("children", []):
                     row_runs: list[list[dict[str, Any]] | str] = []
                     for cell in row.get("children", []):
-                        runs = _extract_inline_children(cell.get("children", []), placeholders)
+                        runs = _extract_inline_children(
+                            cell.get("children", []), placeholders
+                        )
                         if runs and all(r.get("type") == "text" for r in runs):
                             row_runs.append("".join(r.get("text", "") for r in runs))
                         else:
@@ -317,21 +327,27 @@ def _block_to_dict(
             for ic in item_children:
                 ic_type = ic.get("type", "")
                 if ic_type == "block_text":
-                    runs = _extract_inline_children(ic.get("children", []), placeholders)
+                    runs = _extract_inline_children(
+                        ic.get("children", []), placeholders
+                    )
                     inline_runs.extend(runs)
                 elif ic_type == "list":
                     sub = _block_to_dict(ic, placeholders)
                     if sub:
                         sub_lists.append(sub)
                 elif ic_type == "paragraph":
-                    runs = _extract_inline_children(ic.get("children", []), placeholders)
+                    runs = _extract_inline_children(
+                        ic.get("children", []), placeholders
+                    )
                     inline_runs.extend(runs)
 
-            items.append({
-                "type": "list_item",
-                "inline_runs": inline_runs,
-                "children": sub_lists,
-            })
+            items.append(
+                {
+                    "type": "list_item",
+                    "inline_runs": inline_runs,
+                    "children": sub_lists,
+                }
+            )
 
         return {"type": "list", "ordered": ordered, "items": items}
 
@@ -369,7 +385,9 @@ def _flatten_blocks(
                 converted = _block_to_dict(block, placeholders)
                 if converted is None:
                     pass
-                elif isinstance(converted, dict) and converted.get("type") == "paragraph":
+                elif (
+                    isinstance(converted, dict) and converted.get("type") == "paragraph"
+                ):
                     # Standalone image(s) in a paragraph → image blocks.
                     # Consecutive images on adjacent lines (separated only by
                     # softbreaks / linebreaks) are also promoted so each image

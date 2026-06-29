@@ -103,12 +103,24 @@ class BlockquoteStyle:
 # =============================================================================
 
 HEADING_DEFAULTS: dict[str, HeadingStyle] = {
-    "h1": HeadingStyle(font_size=16, bold=False, alignment="center", space_before=12, space_after=12),   # 三号
-    "h2": HeadingStyle(font_size=14, bold=False, alignment="center", space_before=6, space_after=6),   # 四号居中
-    "h3": HeadingStyle(font_size=12, bold=False, space_before=6, space_after=6),                        # 小四居左
-    "h4": HeadingStyle(font_size=12, bold=False, space_before=3, space_after=3),                        # 小四居左
-    "h5": HeadingStyle(font_size=12, bold=False, space_before=3, space_after=3),                        # 小四居左
-    "h6": HeadingStyle(font_size=12, bold=False, space_before=3, space_after=3),                        # 小四居左
+    "h1": HeadingStyle(
+        font_size=16, bold=False, alignment="center", space_before=12, space_after=12
+    ),  # 三号
+    "h2": HeadingStyle(
+        font_size=14, bold=False, alignment="center", space_before=6, space_after=6
+    ),  # 四号居中
+    "h3": HeadingStyle(
+        font_size=12, bold=False, space_before=6, space_after=6
+    ),  # 小四居左
+    "h4": HeadingStyle(
+        font_size=12, bold=False, space_before=3, space_after=3
+    ),  # 小四居左
+    "h5": HeadingStyle(
+        font_size=12, bold=False, space_before=3, space_after=3
+    ),  # 小四居左
+    "h6": HeadingStyle(
+        font_size=12, bold=False, space_before=3, space_after=3
+    ),  # 小四居左
 }
 
 
@@ -315,7 +327,9 @@ def load_config(path: str | Path) -> AppConfig:
 
     # --- Page ---
     page_data = raw.get("page", {})
-    page_number_data = page_data.get("page_number", {}) if isinstance(page_data, dict) else {}
+    page_number_data = (
+        page_data.get("page_number", {}) if isinstance(page_data, dict) else {}
+    )
     page = _dict_to_dataclass(PageConfig, page_data)
     if page_number_data:
         page.page_number = _dict_to_dataclass(PageNumberConfig, page_number_data)

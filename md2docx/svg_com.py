@@ -126,7 +126,8 @@ def process_svg_placeholders(docx_path: Path) -> tuple[int, int]:
             if not svg_file.exists():
                 # Replace the placeholder text with a missing-file note
                 _replace_text_in_para(
-                    para, placeholder_text,
+                    para,
+                    placeholder_text,
                     _SVG_MISSING.format(name=svg_file.name),
                 )
                 print(f"  [跳过] SVG 文件不存在: {svg_file.name}")
@@ -136,13 +137,15 @@ def process_svg_placeholders(docx_path: Path) -> tuple[int, int]:
             try:
                 # Delete the placeholder text and insert the SVG image at
                 # the same position.
-                _replace_text_with_svg(para, placeholder_text,
-                                       str(svg_file), w_in, h_in)
+                _replace_text_with_svg(
+                    para, placeholder_text, str(svg_file), w_in, h_in
+                )
                 print(f"  [OK] {svg_file.name}")
                 replaced += 1
             except Exception as exc:
                 _replace_text_in_para(
-                    para, placeholder_text,
+                    para,
+                    placeholder_text,
                     _SVG_FAILED.format(name=svg_file.name),
                 )
                 print(f"  [失败] {svg_file.name}: {exc}")
@@ -196,7 +199,7 @@ def _replace_text_with_svg(
     """Replace *old_text* with an SVG InlineShape inside *para*."""
     rng = _find_text_range(para, old_text)
     if rng is None:
-        raise RuntimeError(f"无法在段落中定位占位符文本")
+        raise RuntimeError("无法在段落中定位占位符文本")
 
     # Clear the text first
     rng.Text = ""

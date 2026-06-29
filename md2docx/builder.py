@@ -102,8 +102,7 @@ def _render_inline_run(
 
     elif rtype == "image":
         src = run_data.get("src", "")
-        alt = run_data.get("alt", "")
-        _render_inline_image(para, src, alt, md_path)
+        _render_inline_image(para, src, md_path)
 
     elif rtype == "linebreak":
         run = para.add_run("\n")
@@ -137,7 +136,9 @@ def _extract_children_text(children: list[dict[str, Any]]) -> str:
 # =============================================================================
 
 
-def _render_paragraph(doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path = Path(".")) -> None:
+def _render_paragraph(
+    doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path = Path(".")
+) -> None:
     """Render a markdown paragraph with inline formatting."""
     para = doc.add_paragraph()
     apply_format_to_para(para, styles.body)
@@ -155,7 +156,12 @@ def _render_heading(doc: Document, block: dict[str, Any]) -> None:
     doc.add_paragraph(text, style=style_name)
 
 
-def _render_table(doc: Document, block: dict[str, Any], table_style: TableStyle, md_path: Path = Path(".")) -> None:
+def _render_table(
+    doc: Document,
+    block: dict[str, Any],
+    table_style: TableStyle,
+    md_path: Path = Path("."),
+) -> None:
     """Render a markdown table as an academic three-line table.
 
     Each cell may be a plain string (simple text) or a list of inline-run
@@ -190,19 +196,35 @@ def _render_table(doc: Document, block: dict[str, Any], table_style: TableStyle,
     _tbl_styles = StyleConfig(body=_tbl_body)
 
     # Header row
-    _fill_table_row(table.rows[0], header, table_style, _tbl_styles, md_path, is_header=True)
+    _fill_table_row(
+        table.rows[0], header, table_style, _tbl_styles, md_path, is_header=True
+    )
 
     # Data rows
     for i, row_data in enumerate(norm_rows):
-        _fill_table_row(table.rows[i + 1], row_data, table_style, _tbl_styles, md_path, is_header=False)
+        _fill_table_row(
+            table.rows[i + 1],
+            row_data,
+            table_style,
+            _tbl_styles,
+            md_path,
+            is_header=False,
+        )
 
     # Apply three-line formatting
     make_three_line_table(table)
     format_table_content(table, table_style)
 
 
-def _fill_table_row(row, cell_data_list: list, table_style: TableStyle,
-                    tbl_styles: StyleConfig, md_path: Path, *, is_header: bool) -> None:
+def _fill_table_row(
+    row,
+    cell_data_list: list,
+    table_style: TableStyle,
+    tbl_styles: StyleConfig,
+    md_path: Path,
+    *,
+    is_header: bool,
+) -> None:
     """Fill a table row, rendering inline runs (text, math, bold, etc.)."""
     for i, cell_data in enumerate(cell_data_list):
         cell = row.cells[i]
@@ -357,7 +379,7 @@ def _render_image(doc: Document, block: dict[str, Any], md_path: Path) -> None:
     run.add_picture(image_stream, width=width, height=height)
 
 
-def _render_inline_image(para, src: str, alt: str, md_path: Path) -> None:
+def _render_inline_image(para, src: str, md_path: Path) -> None:
     """Render an image inline within a paragraph (smaller max size)."""
     img_path = md_path.parent / src if not Path(src).is_absolute() else Path(src)
     if not img_path.exists():
@@ -381,7 +403,13 @@ def _render_inline_image(para, src: str, alt: str, md_path: Path) -> None:
     run.add_picture(image_stream, width=width, height=height)
 
 
-def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path = Path("."), level: int = 0) -> None:
+def _render_list(
+    doc: Document,
+    block: dict[str, Any],
+    styles: StyleConfig,
+    md_path: Path = Path("."),
+    level: int = 0,
+) -> None:
     """Render an ordered or unordered list.
 
     List content uses the body text style for font/size/color so that list
@@ -396,12 +424,16 @@ def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_p
         para = doc.add_paragraph()
         para.alignment = WD_ALIGN_PARAGRAPH.LEFT
         para.paragraph_format.line_spacing = list_style.line_spacing
-        para.paragraph_format.left_indent = Cm(list_style.indent * list_style.font_size * 0.0353 * (level + 1))
+        para.paragraph_format.left_indent = Cm(
+            list_style.indent * list_style.font_size * 0.0353 * (level + 1)
+        )
 
         # First-line indent for list items (matches body text indentation)
         first_indent_chars = getattr(list_style, "first_line_indent", 0)
         if first_indent_chars > 0:
-            para.paragraph_format.first_line_indent = Pt(first_indent_chars * list_style.font_size)
+            para.paragraph_format.first_line_indent = Pt(
+                first_indent_chars * list_style.font_size
+            )
 
         # Bullet or number prefix — same font as body text
         if ordered:
@@ -430,7 +462,9 @@ def _render_list(doc: Document, block: dict[str, Any], styles: StyleConfig, md_p
                 _render_list(doc, child, styles, md_path, level + 1)
 
 
-def _render_code_block(doc: Document, block: dict[str, Any], code_style: CodeStyle) -> None:
+def _render_code_block(
+    doc: Document, block: dict[str, Any], code_style: CodeStyle
+) -> None:
     """Render a fenced code block as a bordered table box.
 
     Each line of code becomes a separate paragraph inside a single table cell.
@@ -499,7 +533,9 @@ def _render_code_block(doc: Document, block: dict[str, Any], code_style: CodeSty
     spacer.paragraph_format.space_after = Pt(3)
 
 
-def _render_blockquote(doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path = Path(".")) -> None:
+def _render_blockquote(
+    doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path = Path(".")
+) -> None:
     """Render a blockquote."""
     children = block.get("children", [])
     for child in children:
@@ -686,16 +722,15 @@ def _build_cover(doc: Document, config: AppConfig) -> None:
     title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title_p.paragraph_format.space_before = Pt(72)
     run = title_p.add_run(cover.title)
-    set_run_font(run, cn_name='黑体', en_name='Times New Roman',
-                 size=Pt(28), bold=True)
+    set_run_font(run, cn_name="黑体", en_name="Times New Roman", size=Pt(28), bold=True)
 
     # Student info (first line spaced below title)
     lines = [
-        ('姓    名：', cover.author),
-        ('班    级：', cover.class_info),
-        ('学    号：', cover.student_id),
-        ('任课教师：', cover.teacher),
-        ('实验日期：', cover.date),
+        ("姓    名：", cover.author),
+        ("班    级：", cover.class_info),
+        ("学    号：", cover.student_id),
+        ("任课教师：", cover.teacher),
+        ("实验日期：", cover.date),
     ]
     for i, (label, value) in enumerate(lines):
         p = add_cover_line(doc, label, value)
@@ -703,6 +738,7 @@ def _build_cover(doc: Document, config: AppConfig) -> None:
             p.paragraph_format.space_before = Pt(54)
 
     doc.add_page_break()
+
 
 # =============================================================================
 # TOC
@@ -730,7 +766,9 @@ def _build_toc(doc: Document, config: AppConfig) -> None:
 # =============================================================================
 
 
-def _render_block(doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path) -> None:
+def _render_block(
+    doc: Document, block: dict[str, Any], styles: StyleConfig, md_path: Path
+) -> None:
     """Dispatch a single block to the appropriate renderer."""
     btype = block.get("type", "")
 
