@@ -89,8 +89,14 @@ def _escape_math(text: str) -> tuple[str, dict[str, str]]:
     text = _INLINE_MATH_RE.sub(_replace_inline, text)
 
     # -- 3. Restore stashed code regions -----------------------------------
+    # Sort by key length descending to prevent short keys from corrupting
+    # longer keys that share the same prefix (e.g. "FC1" is a prefix
+    # of "FC10" — restoring the former first turns the latter into
+    # "<content>0", leaking orphan digits and losing the original content).
 
-    for key, value in protected.items():
+    for key, value in sorted(
+        protected.items(), key=lambda item: len(item[0]), reverse=True
+    ):
         text = text.replace(key, value)
 
     return text, placeholders
@@ -101,7 +107,11 @@ def _restore_text(text: str, placeholders: dict[str, str]) -> str:
     The inverse operation of _escape_math.
     Restore math placeholders in a text string, returning the raw math.
     """
-    for key, value in placeholders.items():
+    # Sort by key length descending so that "\x00MATHBLOCK10\x00" is
+    # restored before "\x00MATHBLOCK1\x00", avoiding prefix collisions.
+    for key, value in sorted(
+        placeholders.items(), key=lambda item: len(item[0]), reverse=True
+    ):
         text = text.replace(key, value)
     return text
 
