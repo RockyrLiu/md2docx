@@ -346,40 +346,102 @@ def setup_heading_styles(doc: Document, heading_config: dict) -> None:
     """Override Word heading styles 1–6 — clear themes, set 黑体 + explicit black.
 
     heading_config maps 'h1'..'h6' to HeadingStyle objects.
+
+    Both ``styles.xml`` and ``stylesWithEffects.xml`` (Word 2010+) are updated
+    so that the bold/italic/font settings are not silently overridden by the
+    effects-variant style part at display time.
     """
+    from lxml import etree
+
+    w_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+
+    # ---- Collect style parts that contain Heading definitions ----
+    style_elements: list = [doc.styles.element]  # the primary styles.xml <w:styles>
+
+    swe_part = None
+    for rel in doc.part.rels.values():
+        if rel.reltype == "http://schemas.microsoft.com/office/2007/relationships/stylesWithEffects":
+            swe_part = rel.target_part
+            break  # there is at most one
+
+    if swe_part is not None:
+        swe_elem = etree.fromstring(swe_part.blob)
+        if swe_elem.tag == f"{{{w_ns}}}styles":
+            style_elements.append(swe_elem)
+
+    # ---- Update each heading level across all style parts ----
     for i, key in enumerate(("h1", "h2", "h3", "h4", "h5", "h6"), 1):
         hs = heading_config.get(key)
         if hs is None:
             continue
 
         style_name = f"Heading {i}"
+
+        # --- Primary style (python-docx API) ---
         word_style = doc.styles[style_name]
 
-        # Font
         cn = getattr(hs, "font_name", "黑体")
         en = getattr(hs, "font_name_ascii", "Times New Roman")
         _set_style_fonts(word_style, cn, en)
 
-        # Size / bold / italic
         word_style.font.size = Pt(getattr(hs, "font_size", 14))
         word_style.font.bold = getattr(hs, "bold", True)
         word_style.font.italic = getattr(hs, "italic", False)
 
-        # Color
         color_value = getattr(hs, "color", None)
         if color_value:
             word_style.font.color.rgb = RGBColor.from_string(color_value)
         else:
-            word_style.font.color.rgb = RGBColor(0, 0, 0)  # Default to black if color is None
+            word_style.font.color.rgb = RGBColor(0, 0, 0)
 
-
-        # Paragraph format
         pf = word_style.paragraph_format
         align = getattr(hs, "alignment", "left")
         if align in _ALIGN:
             pf.alignment = _ALIGN[align]
         pf.space_before = Pt(getattr(hs, "space_before", 6))
         pf.space_after = Pt(getattr(hs, "space_after", 6))
+
+        # --- Mirror to stylesWithEffects.xml (and any other style parts) ---
+        is_bold = getattr(hs, "bold", True)
+        is_italic = getattr(hs, "italic", False)
+
+        for styles_elem in style_elements[1:]:  # skip the primary (already done)
+            for style_elem in styles_elem.findall(f"w:style", {"w": w_ns}):
+                sid = style_elem.get(f"{{{w_ns}}}styleId")
+                if sid != style_name.replace(" ", ""):
+                    continue
+                rPr = style_elem.find(f"w:rPr", {"w": w_ns})
+                if rPr is None:
+                    rPr = etree.SubElement(style_elem, f"{{{w_ns}}}rPr")
+                    style_elem.insert(0, rPr)
+
+                # w:b — bold
+                b = rPr.find(f"w:b", {"w": w_ns})
+                if b is None:
+                    b = etree.SubElement(rPr, f"{{{w_ns}}}b")
+                b.set(f"{{{w_ns}}}val", "0" if not is_bold else "1")
+
+                # w:bCs — complex-script bold (defaults to true!)
+                bCs = rPr.find(f"w:bCs", {"w": w_ns})
+                if bCs is None:
+                    bCs = etree.SubElement(rPr, f"{{{w_ns}}}bCs")
+                bCs.set(f"{{{w_ns}}}val", "0" if not is_bold else "1")
+
+                # w:i — italic
+                i_elem = rPr.find(f"w:i", {"w": w_ns})
+                if i_elem is None:
+                    i_elem = etree.SubElement(rPr, f"{{{w_ns}}}i")
+                i_elem.set(f"{{{w_ns}}}val", "1" if is_italic else "0")
+
+                # w:iCs — complex-script italic
+                iCs = rPr.find(f"w:iCs", {"w": w_ns})
+                if iCs is None:
+                    iCs = etree.SubElement(rPr, f"{{{w_ns}}}iCs")
+                iCs.set(f"{{{w_ns}}}val", "1" if is_italic else "0")
+
+    # ---- Write modified stylesWithEffects back to the part ----
+    if swe_part is not None and len(style_elements) > 1:
+        swe_part._blob = etree.tostring(style_elements[1], xml_declaration=True, encoding="UTF-8", standalone=True)
 
 
 # =============================================================================
