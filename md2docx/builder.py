@@ -7,7 +7,6 @@ code blocks, blockquotes, thematic breaks, and LaTeX math equations.
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -17,50 +16,6 @@ from docx.oxml.ns import qn
 from docx.oxml.shared import OxmlElement
 from docx.shared import Cm, Pt
 
-# ---- Fix: when cairocffi cannot find the system Cairo DLL (common on
-#      Windows), it raises OSError instead of ImportError.  This means
-#      ``rlPyCairo.gstate``'s ``except ImportError: import cairo`` fallback
-#      never triggers.  We install a tiny import-hook that wraps the OSError
-#      into an ImportError so the pycairo fallback works.
-#      The fix is idempotent and does nothing when cairo DLL is available. ----
-_HOOK_INSTALLED = False
-
-
-def _ensure_cairocffi_import_error() -> None:
-    global _HOOK_INSTALLED
-    if _HOOK_INSTALLED:
-        return
-    _HOOK_INSTALLED = True
-
-    # Build a meta_path finder that intercepts "cairocffi" imports.
-    # We must keep a reference to the *original* meta_path so that we can
-    # delegate the real import attempt without infinite recursion.
-    _REAL_PATH = list(sys.meta_path)
-
-    class _Finder:
-        def find_module(self, fullname, path=None):
-            return self if fullname == "cairocffi" else None
-
-        def load_module(self, fullname):
-            if fullname in sys.modules:
-                return sys.modules[fullname]
-            saved = sys.meta_path
-            sys.meta_path = _REAL_PATH
-            try:
-                __import__(fullname)
-            except OSError:
-                raise ImportError(
-                    "cairocffi cannot load Cairo DLL → falling back to pycairo"
-                ) from None
-            finally:
-                sys.meta_path = saved
-            return sys.modules[fullname]
-
-    sys.meta_path.insert(0, _Finder())
-
-
-_ensure_cairocffi_import_error()
-del _ensure_cairocffi_import_error
 
 from md2docx.config import (
     AppConfig,
@@ -287,9 +242,6 @@ def _prepare_image(img_path: Path, max_w: float, max_h: float) -> tuple | None:
     Returns ``(stream, width, height)`` on success, ``None`` on failure.
     The image is re-encoded through Pillow to strip problematic EXIF/metadata
     that python-docx's internal JPEG parser cannot handle.
-
-    SVG images are converted to PNG via svglib + reportlab before embedding
-    since python-docx cannot render SVG natively.
     """
     from docx.shared import Inches
 
@@ -299,19 +251,9 @@ def _prepare_image(img_path: Path, max_w: float, max_h: float) -> tuple | None:
     except ImportError:
         return None
 
-    is_svg = img_path.suffix.lower() == ".svg"
-
-    # ---- Open image (SVG → PNG via svglib + reportlab) ----
+    # ---- Open image ----
     try:
-        if is_svg:
-            from svglib.svglib import svg2rlg
-            from reportlab.graphics import renderPM
-
-            drawing = svg2rlg(str(img_path))
-            png_bytes = renderPM.drawToString(drawing, fmt="PNG")
-            img = Image.open(_io.BytesIO(png_bytes))
-        else:
-            img = Image.open(img_path)
+        img = Image.open(img_path)
     except Exception:
         return None
 
@@ -327,7 +269,7 @@ def _prepare_image(img_path: Path, max_w: float, max_h: float) -> tuple | None:
             width = Inches(height.inches * aspect)
 
         image_stream = _io.BytesIO()
-        save_format = "PNG" if is_svg else (img.format or "JPEG")
+        save_format = img.format or "JPEG"
         if save_format.upper() in ("JPEG", "JPG") and img.mode == "RGBA":
             img = img.convert("RGB")
         img.save(image_stream, format=save_format)
