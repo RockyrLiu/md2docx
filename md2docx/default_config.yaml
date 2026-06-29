@@ -53,7 +53,7 @@ styles:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
       font_size: 16                  # 三号
-      bold: true
+      bold: false
       italic: false
       alignment: "center"
       space_before: 12
@@ -63,7 +63,7 @@ styles:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
       font_size: 14                  # 四号
-      bold: true
+      bold: false
       italic: false
       alignment: "center"
       space_before: 6
@@ -73,7 +73,7 @@ styles:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
       font_size: 12                  # 小四
-      bold: true
+      bold: false
       italic: false
       alignment: "left"
       space_before: 6
@@ -83,7 +83,7 @@ styles:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
       font_size: 12                  # 小四
-      bold: true
+      bold: false
       italic: false
       alignment: "left"
       space_before: 3
@@ -93,7 +93,7 @@ styles:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
       font_size: 12                  # 小四
-      bold: true
+      bold: false
       italic: false
       alignment: "left"
       space_before: 3
@@ -103,7 +103,7 @@ styles:
       font_name: "黑体"
       font_name_ascii: "Times New Roman"
       font_size: 12                  # 小四
-      bold: true
+      bold: false
       italic: false
       alignment: "left"
       space_before: 3
